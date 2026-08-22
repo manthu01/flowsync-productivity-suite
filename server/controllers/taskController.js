@@ -9,6 +9,8 @@ const createTask = (req, res) => {
         due_date
     } = req.body;
 
+    const normalizedDueDate = due_date ? due_date.slice(0, 10) : due_date;
+
     const query = `
         INSERT INTO tasks
         (title, description, status, priority, due_date, user_id)
@@ -17,7 +19,7 @@ const createTask = (req, res) => {
 
     db.query(
         query,
-        [title, description, status, priority, due_date, req.userId],
+        [title, description, status, priority, normalizedDueDate, req.userId],
         (err, result) => {
             if (err) {
                 return res.status(500).json(err);
@@ -53,6 +55,8 @@ const updateTask = (req, res) => {
         due_date
     } = req.body;
 
+    const normalizedDueDate = due_date ? due_date.slice(0, 10) : due_date;
+
     const query = `
         UPDATE tasks
         SET title=?, description=?, status=?, priority=?, due_date=?
@@ -61,7 +65,7 @@ const updateTask = (req, res) => {
 
     db.query(
         query,
-        [title, description, status, priority, due_date, id, req.userId],
+        [title, description, status, priority, normalizedDueDate, id, req.userId],
         (err, result) => {
             if (err) {
                 return res.status(500).json(err);
