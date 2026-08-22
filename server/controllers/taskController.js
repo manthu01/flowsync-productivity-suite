@@ -6,8 +6,7 @@ const createTask = (req, res) => {
         description,
         status,
         priority,
-        due_date,
-        user_id
+        due_date
     } = req.body;
 
     const query = `
@@ -18,7 +17,7 @@ const createTask = (req, res) => {
 
     db.query(
         query,
-        [title, description, status, priority, due_date, user_id],
+        [title, description, status, priority, due_date, req.userId],
         (err, result) => {
             if (err) {
                 return res.status(500).json(err);
@@ -32,9 +31,9 @@ const createTask = (req, res) => {
 };
 
 const getTasks = (req, res) => {
-    const query = "SELECT * FROM tasks";
+    const query = "SELECT * FROM tasks WHERE user_id = ?";
 
-    db.query(query, (err, result) => {
+    db.query(query, [req.userId], (err, result) => {
         if (err) {
             return res.status(500).json(err);
         }
@@ -57,12 +56,12 @@ const updateTask = (req, res) => {
     const query = `
         UPDATE tasks
         SET title=?, description=?, status=?, priority=?, due_date=?
-        WHERE id=?
+        WHERE id=? AND user_id=?
     `;
 
     db.query(
         query,
-        [title, description, status, priority, due_date, id],
+        [title, description, status, priority, due_date, id, req.userId],
         (err, result) => {
             if (err) {
                 return res.status(500).json(err);
@@ -78,9 +77,9 @@ const updateTask = (req, res) => {
 const deleteTask = (req, res) => {
     const { id } = req.params;
 
-    const query = "DELETE FROM tasks WHERE id=?";
+    const query = "DELETE FROM tasks WHERE id=? AND user_id=?";
 
-    db.query(query, [id], (err, result) => {
+    db.query(query, [id, req.userId], (err, result) => {
         if (err) {
             return res.status(500).json(err);
         }

@@ -2,12 +2,16 @@ const express = require("express");
 
 const router = express.Router();
 
+const requireAuth = require("../middleware/authMiddleware");
+
 const {
     createTask,
     getTasks,
     updateTask,
     deleteTask
 } = require("../controllers/taskController");
+
+router.use(requireAuth);
 
 router.post("/", createTask);
 

@@ -13,7 +13,10 @@ const signup = async (req, res) => {
 
         db.query(query, [name, email, hashedPassword], (err, result) => {
             if (err) {
-                return res.status(500).json(err);
+                if (err.code === "ER_DUP_ENTRY") {
+                    return res.status(409).json({ message: "Email already registered" });
+                }
+                return res.status(500).json({ message: "Signup failed" });
             }
 
             res.status(201).json({
@@ -56,13 +59,14 @@ const login = (req, res) => {
 
         const token = jwt.sign(
             { id: user.id },
-            "flowsync_secret",
+            process.env.JWT_SECRET,
             { expiresIn: "1d" }
         );
 
         res.status(200).json({
             message: "Login successful",
             token,
+            user: { id: user.id, name: user.name, email: user.email },
         });
     });
 };

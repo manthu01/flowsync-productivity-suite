@@ -5,6 +5,7 @@ import {
 } from "react-icons/fa";
 
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
   getTasks,
@@ -12,8 +13,12 @@ import {
   deleteTask,
   updateTaskStatus
 } from "../services/taskService";
+import { logout, getStoredUser } from "../services/authService";
 
 const Dashboard = () => {
+
+  const navigate = useNavigate();
+  const user = getStoredUser();
 
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState("");
@@ -44,10 +49,21 @@ const [priorityFilter, setPriorityFilter] = useState("All");
 
     } catch (error) {
 
+      if (error.response?.status === 401) {
+        logout();
+        navigate("/login");
+        return;
+      }
+
       console.log(error);
 
     }
 
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
   };
 
   const completedTasks = tasks.filter(
@@ -90,8 +106,7 @@ const handleCreateTask = async () => {
       description,
       status: "In Progress",
       priority,
-      due_date: "2026-05-20",
-      user_id: 1
+      due_date: "2026-05-20"
     };
 
     if (editingTaskId) {
@@ -184,9 +199,26 @@ const handleEditTask = (task) => {
 <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-cyan-500/20 blur-[120px] rounded-full"></div>
 
 <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-blue-600/20 blur-[120px] rounded-full"></div>
-      <h1 className="text-4xl font-bold mb-10">
-        FlowSync Dashboard
-      </h1>
+      <div className="flex items-center justify-between mb-10">
+        <h1 className="text-4xl font-bold">
+          FlowSync Dashboard
+        </h1>
+
+        <div className="flex items-center gap-4">
+          {user?.name && (
+            <span className="text-gray-400">
+              Hi, {user.name}
+            </span>
+          )}
+
+          <button
+            onClick={handleLogout}
+            className="bg-white/10 hover:bg-white/20 transition-all px-4 py-2 rounded-xl font-medium"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
       <div className="bg-white/5 backdrop-blur-lg border border-white/10 p-6 rounded-2xl mb-10">
 
   <h2 className="text-2xl font-bold mb-6">

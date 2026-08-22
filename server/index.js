@@ -10,7 +10,11 @@ require("./config/db");
 
 const app = express();
 
-app.use(cors());
+const allowedOrigin = process.env.CLIENT_URL;
+
+app.use(cors({
+    origin: allowedOrigin || true,
+}));
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
@@ -20,7 +24,7 @@ app.get("/", (req, res) => {
     res.send("FlowSync Backend Running");
 });
 
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
