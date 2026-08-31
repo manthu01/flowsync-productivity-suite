@@ -68,3 +68,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .glow-blob {
   animation: glow-drift 18s ease-in-out infinite;
 }
+
+/* Custom cursor replaces the native one on devices with a precise pointer (mouse/trackpad) */
+@media (pointer: fine) {
+  * {
+    cursor: none !important;
+  }
+}
+
+/* Page transition wrapper needs a stable height so routes don't jump during fade/slide */
+.page-transition-wrapper {
+  min-height: 100vh;
+}

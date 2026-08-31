@@ -34,14 +34,30 @@ const createTask = (req, res) => {
 };
 
 const getTasks = (req, res) => {
-    const query = "SELECT * FROM tasks WHERE user_id = ?";
+    const query = `
+        SELECT
+            t.*,
+            COUNT(s.id) AS subtask_count,
+            SUM(CASE WHEN s.is_completed THEN 1 ELSE 0 END) AS subtask_completed_count
+        FROM tasks t
+        LEFT JOIN subtasks s ON s.task_id = t.id
+        WHERE t.user_id = ?
+        GROUP BY t.id
+        ORDER BY t.created_at DESC
+    `;
 
     db.query(query, [req.userId], (err, result) => {
         if (err) {
             return res.status(500).json(err);
         }
 
-        res.status(200).json(result);
+        const tasks = result.map((task) => ({
+            ...task,
+            subtask_count: Number(task.subtask_count),
+            subtask_completed_count: Number(task.subtask_completed_count),
+        }));
+
+        res.status(200).json(tasks);
     });
 };
 

@@ -1,20 +1,88 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
 import { CATEGORIES } from "../utils/categoryColors";
+import SubtaskList from "./SubtaskList";
+import {
+  getSubtasks,
+  createSubtask,
+  updateSubtask,
+  deleteSubtask,
+} from "../services/subtaskService";
 
 const fieldClass =
   "p-3 rounded-xl bg-white/[0.04] border border-white/10 outline-none focus:border-cyan-400/50 transition-colors text-sm";
 
-const TaskModal = ({ task, onClose, onSave, onDelete }) => {
+const TaskModal = ({ task, onClose, onSave, onDelete, onSubtasksChanged }) => {
   const [form, setForm] = useState(task);
+  const [subtasks, setSubtasks] = useState([]);
+  const [subtasksLoading, setSubtasksLoading] = useState(false);
+
+  const loadSubtasks = async (taskId) => {
+    setSubtasksLoading(true);
+    try {
+      const data = await getSubtasks(taskId);
+      setSubtasks(data);
+    } catch {
+      toast.error("Couldn't load subtasks");
+    } finally {
+      setSubtasksLoading(false);
+    }
+  };
 
   useEffect(() => {
+    // Mirrors the `task` prop (a fresh object each time the parent's list refetches)
+    // into local editable form state whenever a different task is opened.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm(task);
+    if (task) {
+      loadSubtasks(task.id);
+    } else {
+      setSubtasks([]);
+    }
   }, [task]);
 
   if (!task) return null;
 
   const update = (key, value) => setForm((f) => ({ ...f, [key]: value }));
+
+  const handleAddSubtask = async (title) => {
+    try {
+      const created = await createSubtask(task.id, title);
+      setSubtasks((prev) => [...prev, created]);
+      onSubtasksChanged?.();
+    } catch {
+      toast.error("Couldn't add subtask");
+    }
+  };
+
+  const handleToggleSubtask = async (subtask) => {
+    const nextState = !subtask.is_completed;
+    setSubtasks((prev) =>
+      prev.map((s) => (s.id === subtask.id ? { ...s, is_completed: nextState } : s))
+    );
+    try {
+      await updateSubtask(task.id, subtask.id, { is_completed: nextState });
+      onSubtasksChanged?.();
+    } catch {
+      setSubtasks((prev) =>
+        prev.map((s) => (s.id === subtask.id ? { ...s, is_completed: !nextState } : s))
+      );
+      toast.error("Couldn't update subtask");
+    }
+  };
+
+  const handleDeleteSubtask = async (subtask) => {
+    const prevSubtasks = subtasks;
+    setSubtasks((prev) => prev.filter((s) => s.id !== subtask.id));
+    try {
+      await deleteSubtask(task.id, subtask.id);
+      onSubtasksChanged?.();
+    } catch {
+      setSubtasks(prevSubtasks);
+      toast.error("Couldn't delete subtask");
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -32,12 +100,13 @@ const TaskModal = ({ task, onClose, onSave, onDelete }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: 16 }}
             transition={{ type: "spring", damping: 24, stiffness: 320 }}
-            className="w-full max-w-lg bg-[#0a0a0c] border border-white/10 rounded-3xl p-7 shadow-[0_0_60px_rgba(0,0,0,0.6)]"
+            className="w-full max-w-lg max-h-[88vh] overflow-y-auto bg-[#0a0a0c] border border-white/10 rounded-3xl p-7 shadow-[0_0_60px_rgba(0,0,0,0.6)]"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold">Task Details</h2>
               <button
                 onClick={onClose}
+                data-cursor-hover
                 className="text-zinc-500 hover:text-white transition-colors text-xl leading-none"
               >
                 &times;
@@ -111,19 +180,36 @@ const TaskModal = ({ task, onClose, onSave, onDelete }) => {
               </div>
             </div>
 
+            <div className="h-px bg-white/10 my-6" />
+
+            {subtasksLoading ? (
+              <p className="text-xs text-zinc-600">Loading subtasks...</p>
+            ) : (
+              <SubtaskList
+                subtasks={subtasks}
+                onAdd={handleAddSubtask}
+                onToggle={handleToggleSubtask}
+                onDelete={handleDeleteSubtask}
+              />
+            )}
+
             <div className="flex gap-3 mt-7">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.015 }}
+                whileTap={{ scale: 0.985 }}
                 onClick={() => onSave(form)}
                 className="flex-1 bg-cyan-500 hover:bg-cyan-400 transition-colors py-2.5 rounded-xl font-semibold text-black"
               >
                 Save Changes
-              </button>
-              <button
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.015 }}
+                whileTap={{ scale: 0.985 }}
                 onClick={() => onDelete(form.id)}
                 className="px-5 py-2.5 rounded-xl font-semibold bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors"
               >
                 Delete
-              </button>
+              </motion.button>
             </div>
           </motion.div>
         </motion.div>

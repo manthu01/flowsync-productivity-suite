@@ -2,33 +2,52 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
-import { login } from "../services/authService";
+import { login, resendVerification } from "../services/authService";
 import AmbientBackground from "../components/AmbientBackground";
 
 const Login = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState(null);
+  const [resending, setResending] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setUnverifiedEmail(null);
     setLoading(true);
 
     try {
-      const data = await login({ email, password });
+      const data = await login({ identifier, password });
       localStorage.setItem("flowsync_token", data.token);
       localStorage.setItem("flowsync_user", JSON.stringify(data.user));
       toast.success(`Welcome back, ${data.user.name.split(" ")[0]}`);
-      navigate("/");
+      navigate("/dashboard");
     } catch (err) {
       const message = err.response?.data?.message || "Login failed";
       setError(message);
       toast.error(message);
+      if (err.response?.data?.unverified) {
+        setUnverifiedEmail(err.response.data.email);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!unverifiedEmail) return;
+    setResending(true);
+    try {
+      await resendVerification(unverifiedEmail);
+      toast.success("Verification email sent — check your inbox");
+    } catch {
+      toast.error("Couldn't resend right now");
+    } finally {
+      setResending(false);
     }
   };
 
@@ -51,33 +70,51 @@ const Login = () => {
         </p>
 
         {error && (
-          <motion.p
+          <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             className="bg-red-500/10 text-red-400 text-sm p-3 rounded-xl mb-4 border border-red-500/20"
           >
-            {error}
-          </motion.p>
+            <p>{error}</p>
+            {unverifiedEmail && (
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resending}
+                className="mt-2 text-cyan-400 hover:underline text-xs disabled:opacity-50"
+              >
+                {resending ? "Sending..." : "Resend verification email"}
+              </button>
+            )}
+          </motion.div>
         )}
 
         <div className="flex flex-col gap-4">
           <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            placeholder="Email or Username"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
             required
             className="p-3 rounded-xl bg-white/[0.04] border border-white/10 outline-none focus:border-cyan-400/50 transition-colors"
           />
 
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="p-3 rounded-xl bg-white/[0.04] border border-white/10 outline-none focus:border-cyan-400/50 transition-colors"
-          />
+          <div className="flex flex-col gap-1.5">
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="p-3 rounded-xl bg-white/[0.04] border border-white/10 outline-none focus:border-cyan-400/50 transition-colors"
+            />
+            <Link
+              to="/forgot-password"
+              className="text-xs text-zinc-500 hover:text-cyan-400 transition-colors self-end"
+            >
+              Forgot password?
+            </Link>
+          </div>
 
           <motion.button
             whileHover={{ scale: 1.015 }}
