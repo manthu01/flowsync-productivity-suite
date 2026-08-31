@@ -6,6 +6,7 @@ const createTask = (req, res) => {
         description,
         status,
         priority,
+        category,
         due_date
     } = req.body;
 
@@ -13,13 +14,13 @@ const createTask = (req, res) => {
 
     const query = `
         INSERT INTO tasks
-        (title, description, status, priority, due_date, user_id)
-        VALUES (?, ?, ?, ?, ?, ?)
+        (title, description, status, priority, category, due_date, user_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
     db.query(
         query,
-        [title, description, status, priority, normalizedDueDate, req.userId],
+        [title, description, status, priority, category || "Other", normalizedDueDate, req.userId],
         (err, result) => {
             if (err) {
                 return res.status(500).json(err);
@@ -52,6 +53,7 @@ const updateTask = (req, res) => {
         description,
         status,
         priority,
+        category,
         due_date
     } = req.body;
 
@@ -59,13 +61,13 @@ const updateTask = (req, res) => {
 
     const query = `
         UPDATE tasks
-        SET title=?, description=?, status=?, priority=?, due_date=?
+        SET title=?, description=?, status=?, priority=?, category=?, due_date=?
         WHERE id=? AND user_id=?
     `;
 
     db.query(
         query,
-        [title, description, status, priority, normalizedDueDate, id, req.userId],
+        [title, description, status, priority, category || "Other", normalizedDueDate, id, req.userId],
         (err, result) => {
             if (err) {
                 return res.status(500).json(err);

@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     description TEXT,
     status VARCHAR(50) DEFAULT 'In Progress',
     priority VARCHAR(50) DEFAULT 'Medium',
+    category VARCHAR(50) DEFAULT 'Other',
     due_date DATE,
     user_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

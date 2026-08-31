@@ -10,10 +10,12 @@ require("./config/db");
 
 const app = express();
 
-const allowedOrigin = process.env.CLIENT_URL;
+const allowedOrigins = process.env.CLIENT_URL
+    ? process.env.CLIENT_URL.split(",").map((url) => url.trim())
+    : true;
 
 app.use(cors({
-    origin: allowedOrigin || true,
+    origin: allowedOrigins,
 }));
 app.use(express.json());
 

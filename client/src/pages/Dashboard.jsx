@@ -4,61 +4,84 @@ import {
   FaClock,
 } from "react-icons/fa";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
 
 import {
   getTasks,
   createTask,
   deleteTask,
-  updateTaskStatus
+  updateTaskStatus,
 } from "../services/taskService";
 import { logout, getStoredUser } from "../services/authService";
+import AmbientBackground from "../components/AmbientBackground";
+import TaskModal from "../components/TaskModal";
+import AnalyticsCharts from "../components/AnalyticsCharts";
+import { CATEGORIES, categoryStyle, priorityStyle } from "../utils/categoryColors";
+
+const inputClass =
+  "p-3 rounded-xl bg-white/[0.04] border border-white/10 outline-none focus:border-cyan-400/50 transition-colors";
+
+const todayStr = () => new Date().toISOString().slice(0, 10);
+
+const StatCard = ({ label, value, icon, accent, delay }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 16 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.4, delay }}
+    whileHover={{ y: -4 }}
+    className={`bg-white/[0.03] backdrop-blur-lg border border-white/10 p-6 rounded-3xl ${accent}`}
+  >
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-zinc-500 text-sm">{label}</p>
+        <h2 className="text-3xl font-bold mt-2">{value}</h2>
+      </div>
+      {icon}
+    </div>
+  </motion.div>
+);
 
 const Dashboard = () => {
-
   const navigate = useNavigate();
   const user = getStoredUser();
 
   const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState("Medium");
+  const [category, setCategory] = useState("Work");
+  const [dueDate, setDueDate] = useState("");
 
-const [description, setDescription] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [priorityFilter, setPriorityFilter] = useState("All");
+  const [categoryFilter, setCategoryFilter] = useState("All");
 
-const [priority, setPriority] = useState("Medium");
-const [editingTaskId, setEditingTaskId] = useState(null);
-const [searchTerm, setSearchTerm] = useState("");
-
-const [statusFilter, setStatusFilter] = useState("All");
-
-const [priorityFilter, setPriorityFilter] = useState("All");
+  const [selectedTask, setSelectedTask] = useState(null);
 
   useEffect(() => {
-
     fetchTasks();
-
   }, []);
 
   const fetchTasks = async () => {
-
     try {
-
       const data = await getTasks();
-
       setTasks(data);
-
     } catch (error) {
-
       if (error.response?.status === 401) {
         logout();
         navigate("/login");
         return;
       }
-
-      console.log(error);
-
+      toast.error("Couldn't load your tasks");
+    } finally {
+      setLoading(false);
     }
-
   };
 
   const handleLogout = () => {
@@ -66,402 +89,358 @@ const [priorityFilter, setPriorityFilter] = useState("All");
     navigate("/login");
   };
 
-  const completedTasks = tasks.filter(
-    (task) => task.status === "Completed"
-  ).length;
+  const completedTasks = tasks.filter((t) => t.status === "Completed").length;
+  const pendingTasks = tasks.length - completedTasks;
 
-  const pendingTasks = tasks.filter(
-    (task) => task.status !== "Completed"
-  ).length;
-  const filteredTasks = tasks.filter((task) => {
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((task) => {
+      const matchesSearch = task.title
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      const matchesStatus =
+        statusFilter === "All" ? true : task.status === statusFilter;
+      const matchesPriority =
+        priorityFilter === "All" ? true : task.priority === priorityFilter;
+      const matchesCategory =
+        categoryFilter === "All" ? true : task.category === categoryFilter;
 
-  const matchesSearch =
-    task.title
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+      return matchesSearch && matchesStatus && matchesPriority && matchesCategory;
+    });
+  }, [tasks, searchTerm, statusFilter, priorityFilter, categoryFilter]);
 
-  const matchesStatus =
-    statusFilter === "All"
-      ? true
-      : task.status === statusFilter;
+  const handleCreateTask = async (e) => {
+    e.preventDefault();
+    if (!title.trim()) return;
 
-  const matchesPriority =
-    priorityFilter === "All"
-      ? true
-      : task.priority === priorityFilter;
+    try {
+      await createTask({
+        title,
+        description,
+        status: "In Progress",
+        priority,
+        category,
+        due_date: dueDate || null,
+      });
+
+      toast.success("Task created");
+      fetchTasks();
+
+      setTitle("");
+      setDescription("");
+      setPriority("Medium");
+      setCategory("Work");
+      setDueDate("");
+    } catch (error) {
+      toast.error("Couldn't create task");
+    }
+  };
+
+  const handleDeleteTask = async (id) => {
+    try {
+      await deleteTask(id);
+      toast.success("Task deleted");
+      setSelectedTask(null);
+      fetchTasks();
+    } catch (error) {
+      toast.error("Couldn't delete task");
+    }
+  };
+
+  const handleCompleteTask = async (task) => {
+    try {
+      await updateTaskStatus(task.id, {
+        ...task,
+        status: task.status === "Completed" ? "In Progress" : "Completed",
+      });
+      fetchTasks();
+    } catch (error) {
+      toast.error("Couldn't update task");
+    }
+  };
+
+  const handleModalSave = async (form) => {
+    try {
+      await updateTaskStatus(form.id, form);
+      toast.success("Task updated");
+      setSelectedTask(null);
+      fetchTasks();
+    } catch (error) {
+      toast.error("Couldn't save changes");
+    }
+  };
+
+  const isOverdue = (task) =>
+    task.due_date &&
+    task.status !== "Completed" &&
+    task.due_date.slice(0, 10) < todayStr();
 
   return (
-    matchesSearch &&
-    matchesStatus &&
-    matchesPriority
-  );
+    <div className="min-h-screen text-white p-6 md:p-8 relative">
+      <AmbientBackground />
 
-});
-const handleCreateTask = async () => {
+      <div className="relative z-10 max-w-6xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="flex items-center justify-between mb-10"
+        >
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+            FlowSync
+          </h1>
 
-  try {
+          <div className="flex items-center gap-4">
+            {user?.name && (
+              <span className="text-zinc-400 hidden sm:inline">
+                Hi, {user.name}
+              </span>
+            )}
+            <button
+              onClick={handleLogout}
+              className="bg-white/5 hover:bg-white/10 border border-white/10 transition-colors px-4 py-2 rounded-xl font-medium text-sm"
+            >
+              Logout
+            </button>
+          </div>
+        </motion.div>
 
-    const newTask = {
-      title,
-      description,
-      status: "In Progress",
-      priority,
-      due_date: "2026-05-20"
-    };
+        <motion.form
+          onSubmit={handleCreateTask}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.05 }}
+          className="bg-white/[0.03] backdrop-blur-lg border border-white/10 p-6 rounded-3xl mb-8"
+        >
+          <h2 className="text-xl font-bold mb-6">Create Task</h2>
 
-    if (editingTaskId) {
+          <div className="flex flex-col gap-4">
+            <input
+              type="text"
+              placeholder="Task title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className={inputClass}
+              required
+            />
 
-  await updateTaskStatus(
-    editingTaskId,
-    newTask
-  );
+            <textarea
+              placeholder="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className={inputClass}
+              rows={2}
+            />
 
-} else {
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                className={inputClass}
+              >
+                <option>Low</option>
+                <option>Medium</option>
+                <option>High</option>
+              </select>
 
-  await createTask(newTask);
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className={inputClass}
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
+              </select>
 
-}
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className={inputClass}
+              />
+            </div>
 
-    fetchTasks();
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              type="submit"
+              className="bg-cyan-500 hover:bg-cyan-400 transition-colors p-3 rounded-xl font-bold text-black"
+            >
+              Create Task
+            </motion.button>
+          </div>
+        </motion.form>
 
-    setTitle("");
-    setDescription("");
-    setPriority("Medium");
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="bg-white/[0.03] backdrop-blur-lg border border-white/10 p-6 rounded-3xl mb-8"
+        >
+          <h2 className="text-xl font-bold mb-6">Search & Filters</h2>
 
-setEditingTaskId(null);
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <input
+              type="text"
+              placeholder="Search tasks..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={inputClass}
+            />
 
-  } catch (error) {
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className={inputClass}
+            >
+              <option>All</option>
+              <option>Completed</option>
+              <option>In Progress</option>
+            </select>
 
-    console.log(error);
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              className={inputClass}
+            >
+              <option>All</option>
+              <option>Low</option>
+              <option>Medium</option>
+              <option>High</option>
+            </select>
 
-  }
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className={inputClass}
+            >
+              <option>All</option>
+              {CATEGORIES.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+        </motion.div>
 
-};
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <StatCard
+            label="Total Tasks"
+            value={tasks.length}
+            icon={<FaTasks size={36} className="text-cyan-400/70" />}
+            accent="shadow-[0_0_25px_rgba(34,211,238,0.08)]"
+            delay={0.15}
+          />
+          <StatCard
+            label="Completed"
+            value={completedTasks}
+            icon={<FaCheckCircle size={36} className="text-emerald-400/70" />}
+            delay={0.2}
+          />
+          <StatCard
+            label="Pending"
+            value={pendingTasks}
+            icon={<FaClock size={36} className="text-amber-400/70" />}
+            delay={0.25}
+          />
+        </div>
 
-const handleDeleteTask = async (id) => {
+        <div className="mb-10">
+          <AnalyticsCharts tasks={tasks} />
+        </div>
 
-  try {
+        <div>
+          <h2 className="text-xl font-bold mb-6">
+            Tasks {!loading && <span className="text-zinc-500 font-normal">({filteredTasks.length})</span>}
+          </h2>
 
-    await deleteTask(id);
-
-    fetchTasks();
-
-  } catch (error) {
-
-    console.log(error);
-
-  }
-
-};
-const handleCompleteTask = async (task) => {
-
-  try {
-
-    const updatedTask = {
-      title: task.title,
-      description: task.description,
-      status:
-        task.status === "Completed"
-          ? "In Progress"
-          : "Completed",
-      priority: task.priority,
-      due_date: task.due_date
-    };
-
-    await updateTaskStatus(
-      task.id,
-      updatedTask
-    );
-
-    fetchTasks();
-
-  } catch (error) {
-
-    console.log(error);
-
-  }
-
-};
-const handleEditTask = (task) => {
-
-  setTitle(task.title);
-
-  setDescription(task.description);
-
-  setPriority(task.priority);
-
-  setEditingTaskId(task.id);
-
-};
-  return (
-
-<div className="min-h-screen text-white p-8 bg-[radial-gradient(circle_at_top,#0f172a,#020617_70%)] relative overflow-hidden">
-<div className="absolute top-0 left-0 w-[500px] h-[500px] bg-cyan-500/20 blur-[120px] rounded-full"></div>
-
-<div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-blue-600/20 blur-[120px] rounded-full"></div>
-      <div className="flex items-center justify-between mb-10">
-        <h1 className="text-4xl font-bold">
-          FlowSync Dashboard
-        </h1>
-
-        <div className="flex items-center gap-4">
-          {user?.name && (
-            <span className="text-gray-400">
-              Hi, {user.name}
-            </span>
+          {!loading && filteredTasks.length === 0 && (
+            <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-10 text-center text-zinc-500">
+              No tasks match your filters.
+            </div>
           )}
 
-          <button
-            onClick={handleLogout}
-            className="bg-white/10 hover:bg-white/20 transition-all px-4 py-2 rounded-xl font-medium"
-          >
-            Logout
-          </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <AnimatePresence mode="popLayout">
+              {filteredTasks.map((task) => (
+                <motion.div
+                  key={task.id}
+                  layout
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.25 }}
+                  onClick={() => setSelectedTask(task)}
+                  className="cursor-pointer bg-white/[0.03] backdrop-blur-lg border border-white/10 p-6 rounded-3xl hover:border-white/20 hover:-translate-y-1 transition-all duration-300"
+                >
+                  <div className="mb-4">
+                    <h3 className="text-xl font-semibold">{task.title}</h3>
+                    {task.description && (
+                      <p className="text-zinc-500 mt-1.5 text-sm line-clamp-2">
+                        {task.description}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 mb-5">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                        task.status === "Completed"
+                          ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                          : "bg-indigo-500/15 text-indigo-300 border-indigo-500/30"
+                      }`}
+                    >
+                      {task.status}
+                    </span>
+
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${priorityStyle(task.priority)}`}>
+                      {task.priority}
+                    </span>
+
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${categoryStyle(task.category)}`}>
+                      {task.category || "Other"}
+                    </span>
+
+                    {task.due_date && (
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                          isOverdue(task)
+                            ? "bg-red-500/15 text-red-300 border-red-500/30"
+                            : "bg-white/5 text-zinc-400 border-white/10"
+                        }`}
+                      >
+                        {isOverdue(task) ? "Overdue · " : "Due "}
+                        {task.due_date.slice(0, 10)}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => handleCompleteTask(task)}
+                      className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 transition-colors py-2 rounded-xl font-medium text-sm"
+                    >
+                      {task.status === "Completed" ? "Mark In Progress" : "Mark Completed"}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTask(task.id)}
+                      className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 transition-colors px-4 py-2 rounded-xl font-medium text-sm"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
-      <div className="bg-white/5 backdrop-blur-lg border border-white/10 p-6 rounded-2xl mb-10">
 
-  <h2 className="text-2xl font-bold mb-6">
-   {editingTaskId
-  ? "Update Task"
-  : "Create Task"}
-  </h2>
-
-  <div className="flex flex-col gap-4">
-
-    <input
-      type="text"
-      placeholder="Task Title"
-      value={title}
-      onChange={(e) => setTitle(e.target.value)}
-      className="p-3 rounded-xl bg-[#0f172a] outline-none"
-    />
-
-    <textarea
-      placeholder="Task Description"
-      value={description}
-      onChange={(e) => setDescription(e.target.value)}
-      className="p-3 rounded-xl bg-[#0f172a] outline-none"
-    />
-
-    <select
-      value={priority}
-      onChange={(e) => setPriority(e.target.value)}
-      className="p-3 rounded-xl bg-[#0f172a] outline-none"
-    >
-
-      <option>Low</option>
-      <option>Medium</option>
-      <option>High</option>
-
-    </select>
-
-    <button
-      onClick={handleCreateTask}
-      className="bg-blue-500 hover:bg-blue-600 transition-all p-3 rounded-xl font-bold"
-    >
-      Create Task
-    </button>
-
-  </div>
-
-</div>
-<div className="bg-white/5 backdrop-blur-lg border border-white/10 p-6 rounded-3xl mb-10">
-
-  <h2 className="text-2xl font-bold mb-6">
-    Search & Filters
-  </h2>
-
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-    <input
-      type="text"
-      placeholder="Search tasks..."
-      value={searchTerm}
-      onChange={(e) => setSearchTerm(e.target.value)}
-      className="p-3 rounded-xl bg-[#0f172a] outline-none"
-    />
-
-    <select
-      value={statusFilter}
-      onChange={(e) => setStatusFilter(e.target.value)}
-      className="p-3 rounded-xl bg-[#0f172a] outline-none"
-    >
-
-      <option>All</option>
-      <option>Completed</option>
-      <option>In Progress</option>
-
-    </select>
-
-    <select
-      value={priorityFilter}
-      onChange={(e) => setPriorityFilter(e.target.value)}
-      className="p-3 rounded-xl bg-[#0f172a] outline-none"
-    >
-
-      <option>All</option>
-      <option>Low</option>
-      <option>Medium</option>
-      <option>High</option>
-
-    </select>
-
-  </div>
-
-</div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-        <div className="bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-400/20 p-6 rounded-3xl shadow-[0_0_25px_rgba(34,211,238,0.15)] hover:-translate-y-2 transition-all duration-300">
-
-          <div className="flex items-center justify-between">
-
-            <div>
-
-              <p className="text-gray-400">
-                Total Tasks
-              </p>
-
-              <h2 className="text-3xl font-bold mt-2">
-                {tasks.length}
-              </h2>
-
-            </div>
-
-            <FaTasks size={40} />
-
-          </div>
-
-        </div>
-
-        <div className="bg-white/5 backdrop-blur-lg border border-white/10 p-6 rounded-3xl shadow-2xl hover:scale-[1.02] transition-all duration-300">
-
-          <div className="flex items-center justify-between">
-
-            <div>
-
-              <p className="text-gray-400">
-                Completed
-              </p>
-
-              <h2 className="text-3xl font-bold mt-2">
-                {completedTasks}
-              </h2>
-
-            </div>
-
-            <FaCheckCircle size={40} />
-
-          </div>
-
-        </div>
-
-        <div className="bg-white/5 backdrop-blur-lg border border-white/10 p-6 rounded-3xl shadow-2xl hover:scale-[1.02] transition-all duration-300">
-
-          <div className="flex items-center justify-between">
-
-            <div>
-
-              <p className="text-gray-400">
-                Pending
-              </p>
-
-              <h2 className="text-3xl font-bold mt-2">
-                {pendingTasks}
-              </h2>
-
-            </div>
-
-            <FaClock size={40} />
-
-          </div>
-
-        </div>
-
-      </div>
-<div className="mt-10">
-
-  <h2 className="text-2xl font-bold mb-6">
-    Tasks
-  </h2>
-
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-    {filteredTasks.map((task) => (
-<div
-  key={task.id}
-  className="bg-white/5 backdrop-blur-lg border border-white/10 p-6 rounded-3xl shadow-2xl border border-[#334155]"
->
-
-  <div className="mb-5">
-
-    <h3 className="text-2xl font-semibold">
-      {task.title}
-    </h3>
-
-    <p className="text-gray-400 mt-2">
-      {task.description}
-    </p>
-
-  </div>
-
-  <div className="flex gap-3 mb-5">
-
-    <span
-      className={`px-3 py-1 rounded-full text-sm font-medium ${
-        task.status === "Completed"
-          ? "bg-green-500/20 text-green-400"
-          : "bg-blue-500/20 text-blue-400"
-      }`}
-    >
-      {task.status}
-    </span>
-
-    <span
-      className={`px-3 py-1 rounded-full text-sm font-medium ${
-        task.priority === "High"
-          ? "bg-red-500/20 text-red-400"
-          : task.priority === "Medium"
-          ? "bg-yellow-500/20 text-yellow-400"
-          : "bg-green-500/20 text-green-400"
-      }`}
-    >
-      {task.priority}
-    </span>
-
-  </div>
-
-  <div className="flex gap-3">
-
-    <button
-      onClick={() => handleCompleteTask(task)}
-      className="flex-1 bg-green-500 hover:bg-green-600 transition-all py-2 rounded-xl font-medium"
-    >
-      {task.status === "Completed"
-        ? "Mark In Progress"
-        : "Mark Completed"}
-    </button>
-<button
-  onClick={() => handleEditTask(task)}
-  className="bg-yellow-500 hover:bg-yellow-600 transition-all px-4 py-2 rounded-xl font-medium"
->
-  Edit
-</button>
-    <button
-      onClick={() => handleDeleteTask(task.id)}
-      className="bg-red-500 hover:bg-red-600 transition-all px-4 py-2 rounded-xl font-medium"
-    >
-      Delete
-    </button>
-
-  </div>
-
-</div>
-    ))}
-
-  </div>
-
-</div>
+      <TaskModal
+        task={selectedTask}
+        onClose={() => setSelectedTask(null)}
+        onSave={handleModalSave}
+        onDelete={handleDeleteTask}
+      />
     </div>
   );
 };
