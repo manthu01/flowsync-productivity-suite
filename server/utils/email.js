@@ -18,6 +18,9 @@ const wrapper = (title, bodyHtml) => `
 const button = (href, label) => `
   <a href="${href}" style="display:inline-block;background:#22d3ee;color:#000;text-decoration:none;font-weight:700;padding:12px 24px;border-radius:12px;font-size:14px;">${label}</a>`;
 
+const escapeHtml = (str) =>
+    str.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
 const send = async ({ to, subject, html }) => {
     if (!resend) {
         const link = html.match(/href="([^"]+)"/)?.[1];
@@ -53,4 +56,22 @@ const sendResetEmail = (to, token) => {
     });
 };
 
-module.exports = { sendVerificationEmail, sendResetEmail };
+const sendContactNotification = ({ name, email, message }) => {
+    const notifyTo = process.env.CONTACT_NOTIFY_EMAIL;
+    if (!notifyTo) {
+        console.log(`[email:skipped - no CONTACT_NOTIFY_EMAIL] New contact message from ${name} <${email}>`);
+        return Promise.resolve({ skipped: true });
+    }
+
+    return send({
+        to: notifyTo,
+        subject: `New contact form message from ${name}`,
+        html: wrapper(
+            "Someone submitted the Contact Us form",
+            `<p style="color:#d4d4d8;font-size:15px;line-height:1.6;margin:0 0 16px;"><strong>${escapeHtml(name)}</strong> &lt;${escapeHtml(email)}&gt;</p>
+             <p style="color:#d4d4d8;font-size:15px;line-height:1.6;white-space:pre-wrap;">${escapeHtml(message)}</p>`
+        ),
+    });
+};
+
+module.exports = { sendVerificationEmail, sendResetEmail, sendContactNotification };
