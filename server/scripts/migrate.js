@@ -89,6 +89,15 @@ const run = (sql, label) =>
         "create contact_messages table"
     );
 
+    // Grandfather in accounts that predate email verification: a real signup always
+    // sets verification_token at creation time, so is_verified=FALSE with no token
+    // can only mean this account existed before the verification feature shipped.
+    // Safe to re-run: a genuinely unverified new signup always still has its token set.
+    await run(
+        "UPDATE users SET is_verified = TRUE WHERE is_verified = FALSE AND verification_token IS NULL",
+        "grandfather pre-verification accounts as verified"
+    );
+
     console.log("Migration complete.");
     process.exit(0);
 })();
