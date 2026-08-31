@@ -11,7 +11,7 @@ import {
 } from "../services/subtaskService";
 
 const fieldClass =
-  "p-3 rounded-xl bg-white/[0.04] border border-white/10 outline-none focus:border-cyan-400/50 transition-colors text-sm";
+  "p-3 rounded-xl bg-line/[0.04] border border-line/10 outline-none focus:border-cyan-400/50 transition-colors text-sm";
 
 const TaskModal = ({ task, onClose, onSave, onDelete, onSubtasksChanged }) => {
   const [form, setForm] = useState(task);
@@ -88,7 +88,7 @@ const TaskModal = ({ task, onClose, onSave, onDelete, onSubtasksChanged }) => {
     <AnimatePresence>
       {task && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface/70 backdrop-blur-sm"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -100,14 +100,14 @@ const TaskModal = ({ task, onClose, onSave, onDelete, onSubtasksChanged }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: 16 }}
             transition={{ type: "spring", damping: 24, stiffness: 320 }}
-            className="w-full max-w-lg max-h-[88vh] overflow-y-auto bg-[#0a0a0c] border border-white/10 rounded-3xl p-7 shadow-[0_0_60px_rgba(0,0,0,0.6)]"
+            className="w-full max-w-lg max-h-[88vh] overflow-y-auto bg-panel border border-line/10 rounded-3xl p-7 shadow-[0_0_60px_rgba(0,0,0,0.6)]"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold">Task Details</h2>
               <button
                 onClick={onClose}
                 data-cursor-hover
-                className="text-zinc-500 hover:text-white transition-colors text-xl leading-none"
+                className="text-subtle hover:text-fg transition-colors text-xl leading-none"
               >
                 &times;
               </button>
@@ -131,7 +131,7 @@ const TaskModal = ({ task, onClose, onSave, onDelete, onSubtasksChanged }) => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-zinc-500">Status</label>
+                  <label className="text-xs text-subtle">Status</label>
                   <select
                     className={fieldClass}
                     value={form.status}
@@ -143,7 +143,7 @@ const TaskModal = ({ task, onClose, onSave, onDelete, onSubtasksChanged }) => {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-zinc-500">Priority</label>
+                  <label className="text-xs text-subtle">Priority</label>
                   <select
                     className={fieldClass}
                     value={form.priority}
@@ -156,7 +156,7 @@ const TaskModal = ({ task, onClose, onSave, onDelete, onSubtasksChanged }) => {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-zinc-500">Category</label>
+                  <label className="text-xs text-subtle">Category</label>
                   <select
                     className={fieldClass}
                     value={form.category || "Other"}
@@ -169,7 +169,7 @@ const TaskModal = ({ task, onClose, onSave, onDelete, onSubtasksChanged }) => {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-zinc-500">Due date</label>
+                  <label className="text-xs text-subtle">Due date</label>
                   <input
                     type="date"
                     className={fieldClass}
@@ -180,10 +180,10 @@ const TaskModal = ({ task, onClose, onSave, onDelete, onSubtasksChanged }) => {
               </div>
             </div>
 
-            <div className="h-px bg-white/10 my-6" />
+            <div className="h-px bg-line/10 my-6" />
 
             {subtasksLoading ? (
-              <p className="text-xs text-zinc-600">Loading subtasks...</p>
+              <p className="text-xs text-subtle">Loading subtasks...</p>
             ) : (
               <SubtaskList
                 subtasks={subtasks}

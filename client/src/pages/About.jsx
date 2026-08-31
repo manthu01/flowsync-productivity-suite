@@ -34,7 +34,7 @@ const About = () => (
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-        className="text-zinc-400 text-lg leading-relaxed mb-14"
+        className="text-muted text-lg leading-relaxed mb-14"
       >
         FlowSync is a full-stack task management platform built to make personal productivity
         feel less like admin work and more like actual progress. It started as a simple
@@ -50,10 +50,10 @@ const About = () => (
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.45, delay: i * 0.08 }}
-            className="bg-white/[0.03] backdrop-blur-lg border border-white/10 p-7 rounded-3xl"
+            className="bg-line/[0.03] backdrop-blur-lg border border-line/10 p-7 rounded-3xl"
           >
             <h2 className="text-xl font-semibold mb-2">{v.title}</h2>
-            <p className="text-zinc-500 leading-relaxed">{v.desc}</p>
+            <p className="text-subtle leading-relaxed">{v.desc}</p>
           </motion.div>
         ))}
       </div>

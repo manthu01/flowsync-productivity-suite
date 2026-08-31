@@ -41,3 +41,12 @@ export const getStoredUser = () => {
     const raw = localStorage.getItem("flowsync_user");
     return raw ? JSON.parse(raw) : null;
 };
+
+// Merges partial changes (e.g. a new name, avatar, or username) into the cached user
+// object so the navbar and other reads of getStoredUser() reflect edits immediately,
+// without waiting for the next login.
+export const updateStoredUser = (partial) => {
+    const current = getStoredUser();
+    if (!current) return;
+    localStorage.setItem("flowsync_user", JSON.stringify({ ...current, ...partial }));
+};

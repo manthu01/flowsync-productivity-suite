@@ -4,6 +4,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme tokens, consumed via the bg-, text-, and border- utilities Tailwind
+   generates from tailwind.config.js (bg, surface, line, fg, muted, subtle).
+   Dark reproduces the site's original hardcoded palette exactly; light is a
+   genuinely separate palette, not just an inverted filter. Switching [data-theme]
+   on <html> (see ThemeContext) repaints the whole site instantly. */
+:root,
+:root[data-theme="dark"] {
+  --color-bg: 3 3 3;         /* #030303 page background */
+  --color-surface: 0 0 0;    /* translucent overlays (navbar/dropdowns), used at low opacity e.g. bg-surface/40 */
+  --color-panel: 10 10 12;   /* opaque elevated surfaces (modal cards) */
+  --color-line: 255 255 255; /* borders + subtle hover fills, used at low opacity */
+  --color-fg: 255 255 255;   /* primary text */
+  --color-muted: 161 161 170;  /* secondary text (was zinc-300/400) */
+  --color-subtle: 113 113 122; /* tertiary/dim text (was zinc-500/600) */
+}
+
+:root[data-theme="light"] {
+  --color-bg: 250 250 250;
+  --color-surface: 255 255 255;
+  --color-panel: 255 255 255;
+  --color-line: 0 0 0;
+  --color-fg: 24 24 27;
+  --color-muted: 82 82 91;
+  --color-subtle: 113 113 122;
+}
+
 * {
   font-family: 'Inter', sans-serif;
 }
@@ -15,9 +41,10 @@ html, body, #root {
 body {
   margin: 0;
   padding: 0;
-  background-color: #030303;
-  color: white;
+  background-color: rgb(var(--color-bg));
+  color: rgb(var(--color-fg));
   position: relative;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* Grain texture overlay, fixed to viewport so it doesn't scroll with content */
@@ -42,22 +69,26 @@ body::before {
 }
 
 ::-webkit-scrollbar-track {
-  background: #030303;
+  background: rgb(var(--color-bg));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: rgb(var(--color-line) / 0.15);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: rgb(var(--color-line) / 0.25);
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
   opacity: 0.6;
   cursor: pointer;
+}
+
+:root[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.5);
 }
 
 @keyframes glow-drift {

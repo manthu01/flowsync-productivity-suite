@@ -89,6 +89,48 @@ const run = (sql, label) =>
         "create contact_messages table"
     );
 
+    await run(
+        "ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500) NULL",
+        "add users.avatar_url"
+    );
+
+    await run(
+        "ALTER TABLE users ADD COLUMN theme ENUM('light', 'dark') NOT NULL DEFAULT 'dark'",
+        "add users.theme"
+    );
+
+    await run(
+        "ALTER TABLE users ADD COLUMN username_changed_at DATETIME NULL",
+        "add users.username_changed_at"
+    );
+
+    await run(
+        `CREATE TABLE IF NOT EXISTS friend_requests (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            sender_id INT NOT NULL,
+            receiver_id INT NOT NULL,
+            status ENUM('pending', 'accepted') NOT NULL DEFAULT 'pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            responded_at TIMESTAMP NULL,
+            FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE KEY idx_friend_pair (sender_id, receiver_id)
+        )`,
+        "create friend_requests table"
+    );
+
+    await run(
+        `CREATE TABLE IF NOT EXISTS starred_friends (
+            user_id INT NOT NULL,
+            friend_id INT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, friend_id),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE
+        )`,
+        "create starred_friends table"
+    );
+
     // Grandfather in accounts that predate email verification: a real signup always
     // sets verification_token at creation time, so is_verified=FALSE with no token
     // can only mean this account existed before the verification feature shipped.

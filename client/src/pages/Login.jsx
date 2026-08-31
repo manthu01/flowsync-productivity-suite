@@ -4,9 +4,11 @@ import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { login, resendVerification } from "../services/authService";
 import AmbientBackground from "../components/AmbientBackground";
+import { useTheme } from "../context/ThemeContext";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { setThemeFromServer } = useTheme();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -24,6 +26,7 @@ const Login = () => {
       const data = await login({ identifier, password });
       localStorage.setItem("flowsync_token", data.token);
       localStorage.setItem("flowsync_user", JSON.stringify(data.user));
+      setThemeFromServer(data.user.theme);
       toast.success(`Welcome back, ${data.user.name.split(" ")[0]}`);
       navigate("/dashboard");
     } catch (err) {
@@ -52,7 +55,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center text-white p-6 relative">
+    <div className="min-h-screen flex items-center justify-center text-fg p-6 relative">
       <AmbientBackground />
 
       <motion.form
@@ -60,12 +63,12 @@ const Login = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="w-full max-w-sm bg-white/[0.03] backdrop-blur-xl border border-white/10 p-8 rounded-3xl relative z-10 shadow-[0_0_60px_rgba(0,0,0,0.5)]"
+        className="w-full max-w-sm bg-line/[0.03] backdrop-blur-xl border border-line/10 p-8 rounded-3xl relative z-10 shadow-[0_0_60px_rgba(0,0,0,0.5)]"
       >
         <h1 className="text-3xl font-extrabold mb-1 text-center tracking-tight">
           FlowSync
         </h1>
-        <p className="text-zinc-500 text-sm text-center mb-8">
+        <p className="text-subtle text-sm text-center mb-8">
           Sign in to your workspace
         </p>
 
@@ -96,7 +99,7 @@ const Login = () => {
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
             required
-            className="p-3 rounded-xl bg-white/[0.04] border border-white/10 outline-none focus:border-cyan-400/50 transition-colors"
+            className="p-3 rounded-xl bg-line/[0.04] border border-line/10 outline-none focus:border-cyan-400/50 transition-colors"
           />
 
           <div className="flex flex-col gap-1.5">
@@ -106,11 +109,11 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="p-3 rounded-xl bg-white/[0.04] border border-white/10 outline-none focus:border-cyan-400/50 transition-colors"
+              className="p-3 rounded-xl bg-line/[0.04] border border-line/10 outline-none focus:border-cyan-400/50 transition-colors"
             />
             <Link
               to="/forgot-password"
-              className="text-xs text-zinc-500 hover:text-cyan-400 transition-colors self-end"
+              className="text-xs text-subtle hover:text-cyan-400 transition-colors self-end"
             >
               Forgot password?
             </Link>
@@ -127,7 +130,7 @@ const Login = () => {
           </motion.button>
         </div>
 
-        <p className="text-zinc-500 text-sm text-center mt-6">
+        <p className="text-subtle text-sm text-center mt-6">
           Don't have an account?{" "}
           <Link to="/signup" className="text-cyan-400 hover:underline">
             Sign up

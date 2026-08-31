@@ -6,6 +6,8 @@ const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 const taskRoutes = require("./routes/taskRoutes");
 const contactRoutes = require("./routes/contactRoutes");
+const profileRoutes = require("./routes/profileRoutes");
+const friendRoutes = require("./routes/friendRoutes");
 
 require("./config/db");
 
@@ -23,6 +25,8 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/contact", contactRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/friends", friendRoutes);
 
 app.get("/", (req, res) => {
     res.send("FlowSync Backend Running");

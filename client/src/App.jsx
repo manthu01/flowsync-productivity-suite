@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Toaster } from "react-hot-toast";
@@ -6,12 +7,17 @@ import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import CustomCursor from "./components/CustomCursor";
 import PageTransition from "./components/PageTransition";
+import { useTheme } from "./context/ThemeContext";
+import { getToken, updateStoredUser } from "./services/authService";
+import { getProfile } from "./services/profileService";
 
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Tasks from "./pages/Tasks";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
+import Friends from "./pages/Friends";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import VerifyEmail from "./pages/VerifyEmail";
@@ -69,6 +75,26 @@ const AnimatedRoutes = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <PageTransition>
+                  <Profile />
+                </PageTransition>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/friends"
+            element={
+              <ProtectedRoute>
+                <PageTransition>
+                  <Friends />
+                </PageTransition>
+              </ProtectedRoute>
+            }
+          />
         </Route>
 
         <Route
@@ -117,6 +143,26 @@ const AnimatedRoutes = () => {
 };
 
 function App() {
+  const { theme, setThemeFromServer } = useTheme();
+  const isDark = theme === "dark";
+
+  useEffect(() => {
+    // On a fresh page load with an existing session, pull the latest profile so the
+    // navbar avatar and theme reflect whatever was last saved on another device/tab.
+    if (!getToken()) return;
+
+    getProfile()
+      .then((profile) => {
+        updateStoredUser({
+          name: profile.name,
+          username: profile.username,
+          avatar_url: profile.avatar_url,
+        });
+        setThemeFromServer(profile.theme);
+      })
+      .catch(() => {});
+  }, [setThemeFromServer]);
+
   return (
     <BrowserRouter>
       <CustomCursor />
@@ -124,14 +170,14 @@ function App() {
         position="top-right"
         toastOptions={{
           style: {
-            background: "#0a0a0c",
-            color: "#fff",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: isDark ? "#0a0a0c" : "#ffffff",
+            color: isDark ? "#fff" : "#18181b",
+            border: isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(0,0,0,0.1)",
             borderRadius: "12px",
             fontSize: "14px",
           },
-          success: { iconTheme: { primary: "#22d3ee", secondary: "#0a0a0c" } },
-          error: { iconTheme: { primary: "#f87171", secondary: "#0a0a0c" } },
+          success: { iconTheme: { primary: "#22d3ee", secondary: isDark ? "#0a0a0c" : "#ffffff" } },
+          error: { iconTheme: { primary: "#f87171", secondary: isDark ? "#0a0a0c" : "#ffffff" } },
         }}
       />
       <AnimatedRoutes />

@@ -46,7 +46,7 @@ const Home = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-white/5 border border-white/10 text-zinc-400 mb-6"
+          className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-line/5 border border-line/10 text-muted mb-6"
         >
           Task management that doesn't feel like a chore
         </motion.div>
@@ -68,7 +68,7 @@ const Home = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.15 }}
-          className="text-zinc-400 text-lg mt-6 max-w-xl mx-auto"
+          className="text-muted text-lg mt-6 max-w-xl mx-auto"
         >
           FlowSync is a focused workspace for tracking tasks, breaking them into subtasks,
           and seeing your progress in real time.
@@ -93,7 +93,7 @@ const Home = () => {
             <motion.span
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              className="inline-block bg-white/5 hover:bg-white/10 border border-white/10 transition-colors px-7 py-3 rounded-xl font-semibold"
+              className="inline-block bg-line/5 hover:bg-line/10 border border-line/10 transition-colors px-7 py-3 rounded-xl font-semibold"
             >
               Learn More
             </motion.span>
@@ -108,13 +108,13 @@ const Home = () => {
               key={f.title}
               {...fadeUp(i * 0.08)}
               whileHover={{ y: -4 }}
-              className="bg-white/[0.03] backdrop-blur-lg border border-white/10 p-6 rounded-3xl"
+              className="bg-line/[0.03] backdrop-blur-lg border border-line/10 p-6 rounded-3xl"
             >
-              <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-4">
+              <div className="w-11 h-11 rounded-xl bg-line/5 border border-line/10 flex items-center justify-center mb-4">
                 {f.icon}
               </div>
               <h3 className="font-semibold text-lg mb-1.5">{f.title}</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed">{f.desc}</p>
+              <p className="text-subtle text-sm leading-relaxed">{f.desc}</p>
             </motion.div>
           ))}
         </div>

@@ -18,11 +18,11 @@ const StatCard = ({ label, value, icon, delay }) => (
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.4, delay }}
     whileHover={{ y: -4 }}
-    className="bg-white/[0.03] backdrop-blur-lg border border-white/10 p-6 rounded-3xl"
+    className="bg-line/[0.03] backdrop-blur-lg border border-line/10 p-6 rounded-3xl"
   >
     <div className="flex items-center justify-between">
       <div>
-        <p className="text-zinc-500 text-sm">{label}</p>
+        <p className="text-subtle text-sm">{label}</p>
         <h2 className="text-3xl font-bold mt-2">{value}</h2>
       </div>
       {icon}
@@ -66,7 +66,7 @@ const Dashboard = () => {
     .slice(0, 4);
 
   return (
-    <div className="min-h-screen text-white p-6 md:p-8 relative">
+    <div className="min-h-screen text-fg p-6 md:p-8 relative">
       <AmbientBackground />
 
       <div className="relative z-10 max-w-6xl mx-auto">
@@ -79,7 +79,7 @@ const Dashboard = () => {
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
             {user?.name ? `Welcome back, ${user.name.split(" ")[0]}` : "Dashboard"}
           </h1>
-          <p className="text-zinc-500 mt-1">Here's where things stand.</p>
+          <p className="text-subtle mt-1">Here's where things stand.</p>
         </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-10">
@@ -126,7 +126,7 @@ const Dashboard = () => {
           </div>
 
           {!loading && recentTasks.length === 0 && (
-            <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-10 text-center text-zinc-500">
+            <div className="bg-line/[0.03] border border-line/10 rounded-3xl p-10 text-center text-subtle">
               No tasks yet.{" "}
               <Link to="/tasks" data-cursor-hover className="text-cyan-400 hover:underline">
                 Create your first one
@@ -141,7 +141,7 @@ const Dashboard = () => {
                 key={task.id}
                 to="/tasks"
                 data-cursor-hover
-                className="block bg-white/[0.03] backdrop-blur-lg border border-white/10 p-5 rounded-2xl hover:border-white/20 hover:-translate-y-1 transition-all duration-300"
+                className="block bg-line/[0.03] backdrop-blur-lg border border-line/10 p-5 rounded-2xl hover:border-line/20 hover:-translate-y-1 transition-all duration-300"
               >
                 <h3 className="font-semibold mb-2 truncate">{task.title}</h3>
                 <div className="flex flex-wrap gap-2">

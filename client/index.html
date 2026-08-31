@@ -4,7 +4,19 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>client</title>
+    <title>FlowSync</title>
+    <script>
+      // Applied before anything renders so there's no flash of the wrong theme
+      // on load. ThemeContext takes over (and keeps this in sync) once React mounts.
+      (function () {
+        try {
+          var stored = localStorage.getItem("flowsync_theme");
+          document.documentElement.setAttribute("data-theme", stored === "light" ? "light" : "dark");
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

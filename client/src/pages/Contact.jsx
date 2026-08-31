@@ -5,7 +5,7 @@ import AmbientBackground from "../components/AmbientBackground";
 import { sendContactMessage } from "../services/contactService";
 
 const fieldClass =
-  "p-3 rounded-xl bg-white/[0.04] border border-white/10 outline-none focus:border-cyan-400/50 transition-colors";
+  "p-3 rounded-xl bg-line/[0.04] border border-line/10 outline-none focus:border-cyan-400/50 transition-colors";
 
 const Contact = () => {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
@@ -46,7 +46,7 @@ const Contact = () => {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
-          className="text-zinc-400 text-center mb-10"
+          className="text-muted text-center mb-10"
         >
           Found a bug, have an idea, or just want to say hi? Send it over.
         </motion.p>
@@ -56,7 +56,7 @@ const Contact = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.15 }}
-          className="bg-white/[0.03] backdrop-blur-lg border border-white/10 p-7 rounded-3xl flex flex-col gap-4"
+          className="bg-line/[0.03] backdrop-blur-lg border border-line/10 p-7 rounded-3xl flex flex-col gap-4"
         >
           {sent ? (
             <motion.div
@@ -65,7 +65,7 @@ const Contact = () => {
               className="text-center py-8"
             >
               <p className="text-xl font-semibold mb-2">Thanks for reaching out 🎉</p>
-              <p className="text-zinc-500 text-sm mb-6">We'll get back to you soon.</p>
+              <p className="text-subtle text-sm mb-6">We'll get back to you soon.</p>
               <button
                 type="button"
                 data-cursor-hover

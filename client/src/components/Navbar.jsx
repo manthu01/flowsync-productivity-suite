@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaBars, FaTimes } from "react-icons/fa";
+import { FiUserPlus } from "react-icons/fi";
 import { getToken, getStoredUser, logout } from "../services/authService";
+import { getPendingRequests } from "../services/friendService";
+import Avatar from "./Avatar";
 
 const NAV_LINKS = [
   { to: "/", label: "Home" },
@@ -15,8 +18,16 @@ const NAV_LINKS = [
 const Navbar = () => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
   const isAuthed = !!getToken();
   const user = getStoredUser();
+
+  useEffect(() => {
+    if (!isAuthed) return;
+    getPendingRequests()
+      .then((data) => setPendingCount(data.incoming.length))
+      .catch(() => {});
+  }, [isAuthed]);
 
   const handleLogout = () => {
     logout();
@@ -29,7 +40,7 @@ const Navbar = () => {
       initial={{ opacity: 0, y: -16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="sticky top-0 z-40 backdrop-blur-xl bg-black/40 border-b border-white/10"
+      className="sticky top-0 z-40 backdrop-blur-xl bg-surface/40 border-b border-line/10"
     >
       <div className="max-w-6xl mx-auto px-6 md:px-8 h-16 flex items-center justify-between">
         <Link to="/" data-cursor-hover className="text-lg font-extrabold tracking-tight">
@@ -44,7 +55,7 @@ const Navbar = () => {
               data-cursor-hover
               className={({ isActive }) =>
                 `relative px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  isActive ? "text-white" : "text-zinc-400 hover:text-white"
+                  isActive ? "text-fg" : "text-muted hover:text-fg"
                 }`
               }
             >
@@ -54,7 +65,7 @@ const Navbar = () => {
                   {isActive && (
                     <motion.span
                       layoutId="nav-active"
-                      className="absolute inset-0 -z-10 rounded-lg bg-white/[0.06] border border-white/10"
+                      className="absolute inset-0 -z-10 rounded-lg bg-line/[0.06] border border-line/10"
                       transition={{ type: "spring", stiffness: 400, damping: 32 }}
                     />
                   )}
@@ -67,13 +78,26 @@ const Navbar = () => {
         <div className="hidden md:flex items-center gap-3">
           {isAuthed ? (
             <>
-              {user?.name && (
-                <span className="text-zinc-400 text-sm">Hi, {user.name.split(" ")[0]}</span>
-              )}
+              <Link
+                to="/friends"
+                data-cursor-hover
+                aria-label="Friends"
+                className="relative w-10 h-10 rounded-full flex items-center justify-center text-fg bg-line/5 hover:bg-line/10 border border-line/10 transition-colors"
+              >
+                <FiUserPlus size={18} />
+                {pendingCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-cyan-500 text-black text-[10px] font-bold flex items-center justify-center">
+                    {pendingCount > 9 ? "9+" : pendingCount}
+                  </span>
+                )}
+              </Link>
+              <Link to="/profile" data-cursor-hover aria-label="Profile">
+                <Avatar src={user?.avatar_url} name={user?.name} size="md" />
+              </Link>
               <button
                 onClick={handleLogout}
                 data-cursor-hover
-                className="bg-white/5 hover:bg-white/10 border border-white/10 transition-colors px-4 py-2 rounded-xl font-medium text-sm"
+                className="bg-line/5 hover:bg-line/10 border border-line/10 transition-colors px-4 py-2 rounded-xl font-medium text-sm"
               >
                 Logout
               </button>
@@ -83,7 +107,7 @@ const Navbar = () => {
               <Link
                 to="/login"
                 data-cursor-hover
-                className="px-4 py-2 text-sm font-medium text-zinc-300 hover:text-white transition-colors"
+                className="px-4 py-2 text-sm font-medium text-muted hover:text-fg transition-colors"
               >
                 Log In
               </Link>
@@ -101,7 +125,7 @@ const Navbar = () => {
         <button
           onClick={() => setMenuOpen((v) => !v)}
           data-cursor-hover
-          className="md:hidden text-zinc-300 hover:text-white transition-colors"
+          className="md:hidden text-muted hover:text-fg transition-colors"
           aria-label="Toggle menu"
         >
           {menuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
@@ -115,7 +139,7 @@ const Navbar = () => {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25 }}
-            className="md:hidden overflow-hidden border-t border-white/10 bg-black/60"
+            className="md:hidden overflow-hidden border-t border-line/10 bg-surface/60"
           >
             <div className="px-6 py-4 flex flex-col gap-1">
               {NAV_LINKS.map((link) => (
@@ -125,7 +149,7 @@ const Navbar = () => {
                   onClick={() => setMenuOpen(false)}
                   className={({ isActive }) =>
                     `px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      isActive ? "bg-white/[0.06] text-white" : "text-zinc-400"
+                      isActive ? "bg-line/[0.06] text-fg" : "text-muted"
                     }`
                   }
                 >
@@ -133,21 +157,44 @@ const Navbar = () => {
                 </NavLink>
               ))}
 
-              <div className="h-px bg-white/10 my-2" />
+              <div className="h-px bg-line/10 my-2" />
 
               {isAuthed ? (
-                <button
-                  onClick={handleLogout}
-                  className="text-left px-3 py-2.5 rounded-lg text-sm font-medium text-red-400"
-                >
-                  Logout
-                </button>
+                <>
+                  <Link
+                    to="/profile"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-fg"
+                  >
+                    <Avatar src={user?.avatar_url} name={user?.name} size="sm" />
+                    Profile
+                  </Link>
+                  <Link
+                    to="/friends"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-fg"
+                  >
+                    <FiUserPlus size={18} />
+                    Friends
+                    {pendingCount > 0 && (
+                      <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-cyan-500 text-black text-[10px] font-bold flex items-center justify-center">
+                        {pendingCount > 9 ? "9+" : pendingCount}
+                      </span>
+                    )}
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="text-left px-3 py-2.5 rounded-lg text-sm font-medium text-red-400"
+                  >
+                    Logout
+                  </button>
+                </>
               ) : (
                 <div className="flex gap-2 px-3 pt-1">
                   <Link
                     to="/login"
                     onClick={() => setMenuOpen(false)}
-                    className="flex-1 text-center py-2.5 rounded-lg text-sm font-medium text-zinc-300 border border-white/10"
+                    className="flex-1 text-center py-2.5 rounded-lg text-sm font-medium text-muted border border-line/10"
                   >
                     Log In
                   </Link>

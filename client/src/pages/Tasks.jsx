@@ -15,7 +15,7 @@ import TaskModal from "../components/TaskModal";
 import { CATEGORIES, categoryStyle, priorityStyle } from "../utils/categoryColors";
 
 const inputClass =
-  "p-3 rounded-xl bg-white/[0.04] border border-white/10 outline-none focus:border-cyan-400/50 transition-colors";
+  "p-3 rounded-xl bg-line/[0.04] border border-line/10 outline-none focus:border-cyan-400/50 transition-colors";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
@@ -147,7 +147,7 @@ const Tasks = () => {
     task.due_date.slice(0, 10) < todayStr();
 
   return (
-    <div className="min-h-screen text-white p-6 md:p-8 relative">
+    <div className="min-h-screen text-fg p-6 md:p-8 relative">
       <AmbientBackground />
 
       <div className="relative z-10 max-w-6xl mx-auto">
@@ -165,7 +165,7 @@ const Tasks = () => {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.05 }}
-          className="bg-white/[0.03] backdrop-blur-lg border border-white/10 p-6 rounded-3xl mb-8"
+          className="bg-line/[0.03] backdrop-blur-lg border border-line/10 p-6 rounded-3xl mb-8"
         >
           <h2 className="text-xl font-bold mb-6">Create Task</h2>
 
@@ -232,7 +232,7 @@ const Tasks = () => {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
-          className="bg-white/[0.03] backdrop-blur-lg border border-white/10 p-6 rounded-3xl mb-8"
+          className="bg-line/[0.03] backdrop-blur-lg border border-line/10 p-6 rounded-3xl mb-8"
         >
           <h2 className="text-xl font-bold mb-6">Search & Filters</h2>
 
@@ -282,11 +282,11 @@ const Tasks = () => {
         <div>
           <h2 className="text-xl font-bold mb-6">
             {tasks.length === filteredTasks.length ? "All Tasks" : "Tasks"}{" "}
-            {!loading && <span className="text-zinc-500 font-normal">({filteredTasks.length})</span>}
+            {!loading && <span className="text-subtle font-normal">({filteredTasks.length})</span>}
           </h2>
 
           {!loading && filteredTasks.length === 0 && (
-            <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-10 text-center text-zinc-500">
+            <div className="bg-line/[0.03] border border-line/10 rounded-3xl p-10 text-center text-subtle">
               No tasks match your filters.
             </div>
           )}
@@ -309,12 +309,12 @@ const Tasks = () => {
                     transition={{ duration: 0.25 }}
                     onClick={() => setSelectedTask(task)}
                     data-cursor-hover
-                    className="cursor-pointer bg-white/[0.03] backdrop-blur-lg border border-white/10 p-6 rounded-3xl hover:border-white/20 hover:-translate-y-1 transition-all duration-300"
+                    className="cursor-pointer bg-line/[0.03] backdrop-blur-lg border border-line/10 p-6 rounded-3xl hover:border-line/20 hover:-translate-y-1 transition-all duration-300"
                   >
                     <div className="mb-4">
                       <h3 className="text-xl font-semibold">{task.title}</h3>
                       {task.description && (
-                        <p className="text-zinc-500 mt-1.5 text-sm line-clamp-2">
+                        <p className="text-subtle mt-1.5 text-sm line-clamp-2">
                           {task.description}
                         </p>
                       )}
@@ -344,7 +344,7 @@ const Tasks = () => {
                           className={`px-3 py-1 rounded-full text-xs font-medium border ${
                             isOverdue(task)
                               ? "bg-red-500/15 text-red-300 border-red-500/30"
-                              : "bg-white/5 text-zinc-400 border-white/10"
+                              : "bg-line/5 text-muted border-line/10"
                           }`}
                         >
                           {isOverdue(task) ? "Overdue · " : "Due "}
@@ -355,13 +355,13 @@ const Tasks = () => {
 
                     {subtaskTotal > 0 && (
                       <div className="mb-5">
-                        <div className="flex items-center justify-between text-xs text-zinc-500 mb-1.5">
+                        <div className="flex items-center justify-between text-xs text-subtle mb-1.5">
                           <span>Subtasks</span>
                           <span>
                             {subtaskDone}/{subtaskTotal}
                           </span>
                         </div>
-                        <div className="h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
+                        <div className="h-1.5 w-full rounded-full bg-line/5 overflow-hidden">
                           <motion.div
                             className="h-full rounded-full"
                             style={{
@@ -382,7 +382,7 @@ const Tasks = () => {
                       <button
                         onClick={() => handleCompleteTask(task)}
                         data-cursor-hover
-                        className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 transition-colors py-2 rounded-xl font-medium text-sm"
+                        className="flex-1 bg-line/5 hover:bg-line/10 border border-line/10 transition-colors py-2 rounded-xl font-medium text-sm"
                       >
                         {task.status === "Completed" ? "Mark In Progress" : "Mark Completed"}
                       </button>

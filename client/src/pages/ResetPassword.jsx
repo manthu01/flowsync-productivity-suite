@@ -44,7 +44,7 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center text-white p-6 relative">
+    <div className="min-h-screen flex items-center justify-center text-fg p-6 relative">
       <AmbientBackground />
 
       <motion.form
@@ -52,10 +52,10 @@ const ResetPassword = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-sm bg-white/[0.03] backdrop-blur-xl border border-white/10 p-8 rounded-3xl relative z-10 shadow-[0_0_60px_rgba(0,0,0,0.5)]"
+        className="w-full max-w-sm bg-line/[0.03] backdrop-blur-xl border border-line/10 p-8 rounded-3xl relative z-10 shadow-[0_0_60px_rgba(0,0,0,0.5)]"
       >
         <h1 className="text-3xl font-extrabold mb-1 text-center tracking-tight">FlowSync</h1>
-        <p className="text-zinc-500 text-sm text-center mb-8">Set a new password</p>
+        <p className="text-subtle text-sm text-center mb-8">Set a new password</p>
 
         {error && (
           <motion.p
@@ -75,7 +75,7 @@ const ResetPassword = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
-            className="p-3 rounded-xl bg-white/[0.04] border border-white/10 outline-none focus:border-cyan-400/50 transition-colors"
+            className="p-3 rounded-xl bg-line/[0.04] border border-line/10 outline-none focus:border-cyan-400/50 transition-colors"
           />
 
           <input
@@ -85,7 +85,7 @@ const ResetPassword = () => {
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
             minLength={6}
-            className="p-3 rounded-xl bg-white/[0.04] border border-white/10 outline-none focus:border-cyan-400/50 transition-colors"
+            className="p-3 rounded-xl bg-line/[0.04] border border-line/10 outline-none focus:border-cyan-400/50 transition-colors"
           />
 
           <motion.button
@@ -99,7 +99,7 @@ const ResetPassword = () => {
           </motion.button>
         </div>
 
-        <p className="text-zinc-500 text-sm text-center mt-6">
+        <p className="text-subtle text-sm text-center mt-6">
           <Link to="/login" className="text-cyan-400 hover:underline">
             Back to Log In
           </Link>

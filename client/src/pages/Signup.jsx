@@ -33,14 +33,14 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center text-white p-6 relative">
+    <div className="min-h-screen flex items-center justify-center text-fg p-6 relative">
       <AmbientBackground />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="w-full max-w-sm bg-white/[0.03] backdrop-blur-xl border border-white/10 p-8 rounded-3xl relative z-10 shadow-[0_0_60px_rgba(0,0,0,0.5)]"
+        className="w-full max-w-sm bg-line/[0.03] backdrop-blur-xl border border-line/10 p-8 rounded-3xl relative z-10 shadow-[0_0_60px_rgba(0,0,0,0.5)]"
       >
         <h1 className="text-3xl font-extrabold mb-1 text-center tracking-tight">
           FlowSync
@@ -53,8 +53,8 @@ const Signup = () => {
             className="text-center py-4"
           >
             <p className="text-lg font-semibold mb-2">Check your inbox 📬</p>
-            <p className="text-zinc-400 text-sm leading-relaxed mb-6">
-              We sent a verification link to <span className="text-white">{submittedEmail}</span>.
+            <p className="text-muted text-sm leading-relaxed mb-6">
+              We sent a verification link to <span className="text-fg">{submittedEmail}</span>.
               Verify your email, then log in.
             </p>
             <Link to="/login" className="text-cyan-400 hover:underline text-sm">
@@ -63,7 +63,7 @@ const Signup = () => {
           </motion.div>
         ) : (
           <>
-            <p className="text-zinc-500 text-sm text-center mb-8">
+            <p className="text-subtle text-sm text-center mb-8">
               Create your workspace
             </p>
 
@@ -84,7 +84,7 @@ const Signup = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="p-3 rounded-xl bg-white/[0.04] border border-white/10 outline-none focus:border-cyan-400/50 transition-colors"
+                className="p-3 rounded-xl bg-line/[0.04] border border-line/10 outline-none focus:border-cyan-400/50 transition-colors"
               />
 
               <input
@@ -97,7 +97,7 @@ const Signup = () => {
                 maxLength={20}
                 pattern="[a-zA-Z0-9_]+"
                 title="Letters, numbers, and underscores only"
-                className="p-3 rounded-xl bg-white/[0.04] border border-white/10 outline-none focus:border-cyan-400/50 transition-colors"
+                className="p-3 rounded-xl bg-line/[0.04] border border-line/10 outline-none focus:border-cyan-400/50 transition-colors"
               />
 
               <input
@@ -106,7 +106,7 @@ const Signup = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="p-3 rounded-xl bg-white/[0.04] border border-white/10 outline-none focus:border-cyan-400/50 transition-colors"
+                className="p-3 rounded-xl bg-line/[0.04] border border-line/10 outline-none focus:border-cyan-400/50 transition-colors"
               />
 
               <input
@@ -116,7 +116,7 @@ const Signup = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="p-3 rounded-xl bg-white/[0.04] border border-white/10 outline-none focus:border-cyan-400/50 transition-colors"
+                className="p-3 rounded-xl bg-line/[0.04] border border-line/10 outline-none focus:border-cyan-400/50 transition-colors"
               />
 
               <motion.button
@@ -130,7 +130,7 @@ const Signup = () => {
               </motion.button>
             </form>
 
-            <p className="text-zinc-500 text-sm text-center mt-6">
+            <p className="text-subtle text-sm text-center mt-6">
               Already have an account?{" "}
               <Link to="/login" className="text-cyan-400 hover:underline">
                 Log in

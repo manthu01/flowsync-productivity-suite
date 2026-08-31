@@ -28,25 +28,25 @@ const VerifyEmail = () => {
   }, [token]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center text-white p-6 relative">
+    <div className="min-h-screen flex items-center justify-center text-fg p-6 relative">
       <AmbientBackground />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-sm bg-white/[0.03] backdrop-blur-xl border border-white/10 p-8 rounded-3xl relative z-10 shadow-[0_0_60px_rgba(0,0,0,0.5)] text-center"
+        className="w-full max-w-sm bg-line/[0.03] backdrop-blur-xl border border-line/10 p-8 rounded-3xl relative z-10 shadow-[0_0_60px_rgba(0,0,0,0.5)] text-center"
       >
         <h1 className="text-3xl font-extrabold mb-6 tracking-tight">FlowSync</h1>
 
         {status === "verifying" && (
-          <p className="text-zinc-400">Verifying your email...</p>
+          <p className="text-muted">Verifying your email...</p>
         )}
 
         {status === "success" && (
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
             <p className="text-2xl mb-3">✅</p>
-            <p className="text-zinc-300 mb-6">{message}</p>
+            <p className="text-muted mb-6">{message}</p>
             <Link
               to="/login"
               className="inline-block bg-cyan-500 hover:bg-cyan-400 transition-colors px-6 py-2.5 rounded-xl font-bold text-black"

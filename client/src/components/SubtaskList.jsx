@@ -66,16 +66,16 @@ const SubtaskList = ({ subtasks, onAdd, onToggle, onDelete }) => {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-zinc-300">Subtasks</h3>
+        <h3 className="text-sm font-semibold text-muted">Subtasks</h3>
         {total > 0 && (
-          <span className="text-xs text-zinc-500">
+          <span className="text-xs text-subtle">
             {completed}/{total} complete
           </span>
         )}
       </div>
 
       {total > 0 && (
-        <div className="h-2 w-full rounded-full bg-white/5 overflow-hidden">
+        <div className="h-2 w-full rounded-full bg-line/5 overflow-hidden">
           <motion.div
             className="h-full rounded-full"
             style={{
@@ -109,14 +109,14 @@ const SubtaskList = ({ subtasks, onAdd, onToggle, onDelete }) => {
               />
               <span
                 className={`flex-1 text-sm transition-colors ${
-                  subtask.is_completed ? "text-zinc-500 line-through" : "text-zinc-200"
+                  subtask.is_completed ? "text-subtle line-through" : "text-muted"
                 }`}
               >
                 {subtask.title}
               </span>
               <button
                 onClick={() => onDelete(subtask)}
-                className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400 transition-all"
+                className="opacity-0 group-hover:opacity-100 text-subtle hover:text-red-400 transition-all"
                 aria-label="Delete subtask"
               >
                 <FaTrash size={12} />
@@ -126,7 +126,7 @@ const SubtaskList = ({ subtasks, onAdd, onToggle, onDelete }) => {
         </AnimatePresence>
 
         {total === 0 && (
-          <p className="text-xs text-zinc-600 italic py-1">
+          <p className="text-xs text-subtle italic py-1">
             Break this task down — add your first subtask below.
           </p>
         )}
@@ -137,7 +137,7 @@ const SubtaskList = ({ subtasks, onAdd, onToggle, onDelete }) => {
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           placeholder="Add a subtask..."
-          className="flex-1 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10 outline-none focus:border-cyan-400/50 transition-colors text-sm"
+          className="flex-1 px-3 py-2 rounded-lg bg-line/[0.04] border border-line/10 outline-none focus:border-cyan-400/50 transition-colors text-sm"
         />
         <motion.button
           whileHover={{ scale: 1.05 }}
