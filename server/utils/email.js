@@ -29,7 +29,15 @@ const send = async ({ to, subject, html }) => {
         return { skipped: true };
     }
 
-    return resend.emails.send({ from: FROM, to, subject, html });
+    // The SDK resolves with { error } on failure instead of throwing (e.g. Resend's
+    // sandbox mode rejecting a recipient that isn't the account owner) — surface that
+    // as a real error so callers' catch blocks actually log it instead of the request
+    // silently "succeeding" with no email ever sent.
+    const result = await resend.emails.send({ from: FROM, to, subject, html });
+    if (result.error) {
+        throw new Error(result.error.message);
+    }
+    return result;
 };
 
 const sendVerificationEmail = (to, token) => {
