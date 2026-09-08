@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { generateToken } = require("../utils/tokens");
 const { sendVerificationEmail, sendResetEmail } = require("../utils/email");
+const { isAdminEmail } = require("../utils/admin");
 
 const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,20}$/;
 const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24h
@@ -104,6 +105,10 @@ const login = (req, res) => {
 
         const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
 
+        // Fire-and-forget: powers the admin dashboard's active-user counts, not worth
+        // delaying the login response for.
+        db.query("UPDATE users SET last_login_at = NOW() WHERE id = ?", [user.id], () => {});
+
         res.status(200).json({
             message: "Login successful",
             token,
@@ -114,6 +119,7 @@ const login = (req, res) => {
                 email: user.email,
                 avatar_url: user.avatar_url,
                 theme: user.theme,
+                is_admin: isAdminEmail(user.email),
             },
         });
     });

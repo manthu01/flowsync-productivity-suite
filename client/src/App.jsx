@@ -5,6 +5,7 @@ import { Toaster } from "react-hot-toast";
 
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 import CustomCursor from "./components/CustomCursor";
 import PageTransition from "./components/PageTransition";
 import { useTheme } from "./context/ThemeContext";
@@ -18,6 +19,7 @@ import Tasks from "./pages/Tasks";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Friends from "./pages/Friends";
+import AdminDashboard from "./pages/AdminDashboard";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import VerifyEmail from "./pages/VerifyEmail";
@@ -95,6 +97,16 @@ const AnimatedRoutes = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <PageTransition>
+                  <AdminDashboard />
+                </PageTransition>
+              </AdminRoute>
+            }
+          />
         </Route>
 
         <Route
@@ -157,6 +169,7 @@ function App() {
           name: profile.name,
           username: profile.username,
           avatar_url: profile.avatar_url,
+          is_admin: profile.is_admin,
         });
         setThemeFromServer(profile.theme);
       })

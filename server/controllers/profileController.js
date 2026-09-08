@@ -1,5 +1,6 @@
 const db = require("../config/db");
 const { uploadAvatar, isConfigured } = require("../utils/cloudinary");
+const { isAdminEmail } = require("../utils/admin");
 
 const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,20}$/;
 const USERNAME_COOLDOWN_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
@@ -10,7 +11,7 @@ const getProfile = (req, res) => {
     db.query(`SELECT ${PUBLIC_FIELDS} FROM users WHERE id = ?`, [req.userId], (err, result) => {
         if (err) return res.status(500).json({ message: "Couldn't load profile" });
         if (result.length === 0) return res.status(404).json({ message: "User not found" });
-        res.status(200).json(result[0]);
+        res.status(200).json({ ...result[0], is_admin: isAdminEmail(result[0].email) });
     });
 };
 

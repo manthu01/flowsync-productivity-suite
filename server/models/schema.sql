@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
     avatar_url VARCHAR(500),
     theme ENUM('light', 'dark') NOT NULL DEFAULT 'dark',
     username_changed_at DATETIME,
+    last_login_at DATETIME,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

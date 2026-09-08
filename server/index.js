@@ -8,6 +8,7 @@ const taskRoutes = require("./routes/taskRoutes");
 const contactRoutes = require("./routes/contactRoutes");
 const profileRoutes = require("./routes/profileRoutes");
 const friendRoutes = require("./routes/friendRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 require("./config/db");
 
@@ -27,6 +28,7 @@ app.use("/api/tasks", taskRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/friends", friendRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/", (req, res) => {
     res.send("FlowSync Backend Running");

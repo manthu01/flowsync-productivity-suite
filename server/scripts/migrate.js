@@ -131,6 +131,11 @@ const run = (sql, label) =>
         "create starred_friends table"
     );
 
+    await run(
+        "ALTER TABLE users ADD COLUMN last_login_at DATETIME NULL",
+        "add users.last_login_at"
+    );
+
     // Grandfather in accounts that predate email verification: a real signup always
     // sets verification_token at creation time, so is_verified=FALSE with no token
     // can only mean this account existed before the verification feature shipped.

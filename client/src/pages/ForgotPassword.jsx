@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
+import { FiMail } from "react-icons/fi";
 import { forgotPassword } from "../services/authService";
-import AmbientBackground from "../components/AmbientBackground";
+import AuthLayout from "../components/AuthLayout";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -23,70 +24,59 @@ const ForgotPassword = () => {
     }
   };
 
+  if (sent) {
+    return (
+      <AuthLayout eyebrow="Password reset" title="Check your inbox 📬">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center py-2"
+        >
+          <p className="text-muted text-sm leading-relaxed mb-6">
+            If <span className="text-fg">{email}</span> is registered, we've sent a
+            password reset link.
+          </p>
+          <Link to="/login" className="text-cyan-400 hover:underline text-sm">
+            Back to Log In
+          </Link>
+        </motion.div>
+      </AuthLayout>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center text-fg p-6 relative">
-      <AmbientBackground />
+    <AuthLayout eyebrow="Password reset" title="Forgot password?" subtitle="We'll email you a reset link">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="relative">
+          <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-subtle" size={16} />
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="w-full p-3 pl-10 rounded-xl bg-line/[0.04] border border-line/10 outline-none focus:border-cyan-400/50 transition-colors"
+          />
+        </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-sm bg-line/[0.03] backdrop-blur-xl border border-line/10 p-8 rounded-3xl relative z-10 shadow-[0_0_60px_rgba(0,0,0,0.5)]"
-      >
-        <h1 className="text-3xl font-extrabold mb-1 text-center tracking-tight">FlowSync</h1>
+        <motion.button
+          whileHover={{ scale: 1.015 }}
+          whileTap={{ scale: 0.985 }}
+          type="submit"
+          disabled={loading}
+          className="bg-cyan-500 hover:bg-cyan-400 transition-colors p-3 rounded-xl font-bold text-black disabled:opacity-50"
+        >
+          {loading ? "Sending..." : "Send Reset Link"}
+        </motion.button>
+      </form>
 
-        {sent ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-4"
-          >
-            <p className="text-lg font-semibold mb-2">Check your inbox 📬</p>
-            <p className="text-muted text-sm leading-relaxed mb-6">
-              If <span className="text-fg">{email}</span> is registered, we've sent a
-              password reset link.
-            </p>
-            <Link to="/login" className="text-cyan-400 hover:underline text-sm">
-              Back to Log In
-            </Link>
-          </motion.div>
-        ) : (
-          <>
-            <p className="text-subtle text-sm text-center mb-8">
-              We'll email you a reset link
-            </p>
-
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="p-3 rounded-xl bg-line/[0.04] border border-line/10 outline-none focus:border-cyan-400/50 transition-colors"
-              />
-
-              <motion.button
-                whileHover={{ scale: 1.015 }}
-                whileTap={{ scale: 0.985 }}
-                type="submit"
-                disabled={loading}
-                className="bg-cyan-500 hover:bg-cyan-400 transition-colors p-3 rounded-xl font-bold text-black disabled:opacity-50"
-              >
-                {loading ? "Sending..." : "Send Reset Link"}
-              </motion.button>
-            </form>
-
-            <p className="text-subtle text-sm text-center mt-6">
-              Remembered it?{" "}
-              <Link to="/login" className="text-cyan-400 hover:underline">
-                Log in
-              </Link>
-            </p>
-          </>
-        )}
-      </motion.div>
-    </div>
+      <p className="text-subtle text-sm text-center mt-6">
+        Remembered it?{" "}
+        <Link to="/login" className="text-cyan-400 hover:underline">
+          Log in
+        </Link>
+      </p>
+    </AuthLayout>
   );
 };
 
