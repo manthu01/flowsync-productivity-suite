@@ -1,8 +1,20 @@
-const { Resend } = require("resend");
+const nodemailer = require("nodemailer");
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+// Free-forever alternative to a paid/domain-verified sender: Gmail SMTP via an App
+// Password. Requires 2-Step Verification enabled on the sending Google account.
+const transporter =
+    process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD
+        ? nodemailer.createTransport({
+              service: "gmail",
+              auth: {
+                  user: process.env.GMAIL_USER,
+                  pass: process.env.GMAIL_APP_PASSWORD,
+              },
+          })
+        : null;
 
-const FROM = process.env.EMAIL_FROM || "FlowSync <onboarding@resend.dev>";
+const FROM =
+    process.env.EMAIL_FROM || (process.env.GMAIL_USER ? `FlowSync <${process.env.GMAIL_USER}>` : "FlowSync");
 const APP_URL = process.env.APP_URL || "http://localhost:5173";
 
 const wrapper = (title, bodyHtml) => `
@@ -22,22 +34,16 @@ const escapeHtml = (str) =>
     str.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 const send = async ({ to, subject, html }) => {
-    if (!resend) {
+    if (!transporter) {
         const link = html.match(/href="([^"]+)"/)?.[1];
-        console.log(`[email:skipped - no RESEND_API_KEY] To: ${to} | Subject: ${subject}`);
+        console.log(`[email:skipped - no GMAIL_USER/GMAIL_APP_PASSWORD] To: ${to} | Subject: ${subject}`);
         if (link) console.log(`  Link: ${link}`);
         return { skipped: true };
     }
 
-    // The SDK resolves with { error } on failure instead of throwing (e.g. Resend's
-    // sandbox mode rejecting a recipient that isn't the account owner) — surface that
-    // as a real error so callers' catch blocks actually log it instead of the request
-    // silently "succeeding" with no email ever sent.
-    const result = await resend.emails.send({ from: FROM, to, subject, html });
-    if (result.error) {
-        throw new Error(result.error.message);
-    }
-    return result;
+    // Unlike Resend's SDK, nodemailer rejects the promise on a real send failure, so
+    // callers' existing catch blocks work as-is.
+    return transporter.sendMail({ from: FROM, to, subject, html });
 };
 
 const sendVerificationEmail = (to, token) => {
