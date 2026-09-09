@@ -12,7 +12,7 @@ const VALUES = [
   },
   {
     title: "Your data, secured properly",
-    desc: "Passwords are hashed, never stored in plain text. Accounts are verified by email before they can sign in, and every task is scoped strictly to its owner.",
+    desc: "Passwords are hashed with bcrypt and never stored in plain text — not even we can see them. Every task is scoped strictly to its owner.",
   },
 ];
 

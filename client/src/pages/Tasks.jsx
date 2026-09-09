@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
+import { FiType, FiAlignLeft, FiCalendar, FiSearch } from "react-icons/fi";
 
 import {
   getTasks,
@@ -12,10 +13,37 @@ import {
 import { logout } from "../services/authService";
 import AmbientBackground from "../components/AmbientBackground";
 import TaskModal from "../components/TaskModal";
+import PillSelector from "../components/PillSelector";
 import { CATEGORIES, categoryStyle, priorityStyle } from "../utils/categoryColors";
 
 const inputClass =
   "p-3 rounded-xl bg-line/[0.04] border border-line/10 outline-none focus:border-cyan-400/50 transition-colors";
+
+const PRIORITY_OPTIONS = [
+  { value: "Low", label: "Low", activeClass: "bg-emerald-500" },
+  { value: "Medium", label: "Medium", activeClass: "bg-amber-500" },
+  { value: "High", label: "High", activeClass: "bg-red-500" },
+];
+
+const CATEGORY_ACTIVE_CLASS = {
+  Work: "bg-blue-500",
+  Personal: "bg-emerald-500",
+  Urgent: "bg-red-500",
+  Other: "bg-zinc-500",
+};
+const CATEGORY_OPTIONS = CATEGORIES.map((c) => ({
+  value: c,
+  label: c,
+  activeClass: CATEGORY_ACTIVE_CLASS[c],
+}));
+
+const STATUS_FILTER_OPTIONS = [
+  { value: "All", label: "All", activeClass: "bg-line/40" },
+  { value: "In Progress", label: "In Progress", activeClass: "bg-indigo-500" },
+  { value: "Completed", label: "Completed", activeClass: "bg-emerald-500" },
+];
+const PRIORITY_FILTER_OPTIONS = [{ value: "All", label: "All", activeClass: "bg-line/40" }, ...PRIORITY_OPTIONS];
+const CATEGORY_FILTER_OPTIONS = [{ value: "All", label: "All", activeClass: "bg-line/40" }, ...CATEGORY_OPTIONS];
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
@@ -165,66 +193,74 @@ const Tasks = () => {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.05 }}
-          className="bg-line/[0.03] backdrop-blur-lg border border-line/10 p-6 rounded-3xl mb-8"
+          className="relative overflow-hidden bg-line/[0.03] backdrop-blur-lg border border-line/10 p-6 rounded-3xl mb-8"
         >
-          <h2 className="text-xl font-bold mb-6">Create Task</h2>
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+            className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-gradient-to-br from-cyan-500/10 to-fuchsia-500/10 blur-2xl pointer-events-none"
+          />
 
-          <div className="flex flex-col gap-4">
-            <input
-              type="text"
-              placeholder="Task title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className={inputClass}
-              required
-            />
+          <h2 className="text-xl font-bold mb-6 relative">Create Task</h2>
 
-            <textarea
-              placeholder="Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className={inputClass}
-              rows={2}
-            />
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-                className={inputClass}
-              >
-                <option>Low</option>
-                <option>Medium</option>
-                <option>High</option>
-              </select>
-
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className={inputClass}
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
-
+          <div className="flex flex-col gap-5 relative">
+            <div className="relative">
+              <FiType className="absolute left-3.5 top-3.5 text-subtle" size={16} />
               <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className={inputClass}
+                type="text"
+                placeholder="What needs to get done?"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className={`${inputClass} w-full pl-10`}
+                required
               />
             </div>
 
-            <motion.button
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              type="submit"
-              data-cursor-hover
-              className="bg-cyan-500 hover:bg-cyan-400 transition-colors p-3 rounded-xl font-bold text-black"
-            >
-              Create Task
-            </motion.button>
+            <div className="relative">
+              <FiAlignLeft className="absolute left-3.5 top-3.5 text-subtle" size={16} />
+              <textarea
+                placeholder="Add a description (optional)"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className={`${inputClass} w-full pl-10`}
+                rows={2}
+              />
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2.5">Priority</p>
+              <PillSelector layoutId="create-priority" options={PRIORITY_OPTIONS} value={priority} onChange={setPriority} />
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2.5">Category</p>
+              <PillSelector layoutId="create-category" options={CATEGORY_OPTIONS} value={category} onChange={setCategory} />
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2.5">Due date</p>
+                <div className="relative">
+                  <FiCalendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-subtle" size={16} />
+                  <input
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    className={`${inputClass} w-full pl-10`}
+                  />
+                </div>
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="submit"
+                data-cursor-hover
+                className="bg-cyan-500 hover:bg-cyan-400 transition-colors px-8 py-3 rounded-xl font-bold text-black whitespace-nowrap"
+              >
+                Create Task
+              </motion.button>
+            </div>
           </div>
         </motion.form>
 
@@ -236,46 +272,30 @@ const Tasks = () => {
         >
           <h2 className="text-xl font-bold mb-6">Search & Filters</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="relative mb-5">
+            <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-subtle" size={16} />
             <input
               type="text"
               placeholder="Search tasks..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={inputClass}
+              className={`${inputClass} w-full pl-10`}
             />
+          </div>
 
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className={inputClass}
-            >
-              <option>All</option>
-              <option>Completed</option>
-              <option>In Progress</option>
-            </select>
-
-            <select
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-              className={inputClass}
-            >
-              <option>All</option>
-              <option>Low</option>
-              <option>Medium</option>
-              <option>High</option>
-            </select>
-
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className={inputClass}
-            >
-              <option>All</option>
-              {CATEGORIES.map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
+          <div className="flex flex-col gap-4">
+            <div>
+              <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2.5">Status</p>
+              <PillSelector layoutId="filter-status" options={STATUS_FILTER_OPTIONS} value={statusFilter} onChange={setStatusFilter} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2.5">Priority</p>
+              <PillSelector layoutId="filter-priority" options={PRIORITY_FILTER_OPTIONS} value={priorityFilter} onChange={setPriorityFilter} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2.5">Category</p>
+              <PillSelector layoutId="filter-category" options={CATEGORY_FILTER_OPTIONS} value={categoryFilter} onChange={setCategoryFilter} />
+            </div>
           </div>
         </motion.div>
 
