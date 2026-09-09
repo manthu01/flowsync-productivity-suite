@@ -2,10 +2,16 @@ const nodemailer = require("nodemailer");
 
 // Free-forever alternative to a paid/domain-verified sender: Gmail SMTP via an App
 // Password. Requires 2-Step Verification enabled on the sending Google account.
+// Explicit host/port 587 with STARTTLS rather than the "gmail" shorthand (which
+// defaults to port 465) — some hosts (e.g. Render's free tier) block 465 outbound
+// but leave 587 open, since it's the standard authenticated-submission port.
 const transporter =
     process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD
         ? nodemailer.createTransport({
-              service: "gmail",
+              host: "smtp.gmail.com",
+              port: 587,
+              secure: false,
+              requireTLS: true,
               auth: {
                   user: process.env.GMAIL_USER,
                   pass: process.env.GMAIL_APP_PASSWORD,
