@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { FiMail } from "react-icons/fi";
-import { login, resendVerification } from "../services/authService";
+import { login } from "../services/authService";
 import AuthLayout from "../components/AuthLayout";
 import PasswordInput from "../components/PasswordInput";
 import { useTheme } from "../context/ThemeContext";
@@ -15,13 +15,10 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [unverifiedEmail, setUnverifiedEmail] = useState(null);
-  const [resending, setResending] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setUnverifiedEmail(null);
     setLoading(true);
 
     try {
@@ -35,24 +32,8 @@ const Login = () => {
       const message = err.response?.data?.message || "Login failed";
       setError(message);
       toast.error(message);
-      if (err.response?.data?.unverified) {
-        setUnverifiedEmail(err.response.data.email);
-      }
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleResend = async () => {
-    if (!unverifiedEmail) return;
-    setResending(true);
-    try {
-      await resendVerification(unverifiedEmail);
-      toast.success("Verification email sent — check your inbox");
-    } catch {
-      toast.error("Couldn't resend right now");
-    } finally {
-      setResending(false);
     }
   };
 
@@ -65,16 +46,6 @@ const Login = () => {
           className="bg-red-500/10 text-red-400 text-sm p-3 rounded-xl mb-4 border border-red-500/20"
         >
           <p>{error}</p>
-          {unverifiedEmail && (
-            <button
-              type="button"
-              onClick={handleResend}
-              disabled={resending}
-              className="mt-2 text-cyan-400 hover:underline text-xs disabled:opacity-50"
-            >
-              {resending ? "Sending..." : "Resend verification email"}
-            </button>
-          )}
         </motion.div>
       )}
 

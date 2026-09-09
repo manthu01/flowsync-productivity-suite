@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const bcrypt = require("bcryptjs");
 
 const query = (sql, params) =>
     new Promise((resolve, reject) => {
@@ -84,4 +85,52 @@ const getStats = async (req, res) => {
     }
 };
 
-module.exports = { getStats };
+// Full user list for the admin panel. No pagination yet — fine at this scale, and
+// simplest to reach for a search box on the frontend without a second round trip.
+const getUsers = async (req, res) => {
+    try {
+        const users = await query(
+            `SELECT id, name, username, email, avatar_url, created_at, last_login_at
+             FROM users ORDER BY created_at DESC`
+        );
+        res.status(200).json(users);
+    } catch (error) {
+        res.status(500).json({ message: "Couldn't load users" });
+    }
+};
+
+// Lets an admin set a user's password directly — never displays or requires the old
+// one (that's never possible, since only its bcrypt hash exists), just overwrites it
+// with a new one the admin chooses, same as any "reset password" flow would.
+const setUserPassword = async (req, res) => {
+    const { id } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
+
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const result = await query("UPDATE users SET password = ? WHERE id = ?", [hashedPassword, id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.status(200).json({ message: "Password updated" });
+    } catch (error) {
+        res.status(500).json({ message: "Couldn't update password" });
+    }
+};
+
+const getContactMessages = async (req, res) => {
+    try {
+        const messages = await query("SELECT * FROM contact_messages ORDER BY created_at DESC");
+        res.status(200).json(messages);
+    } catch (error) {
+        res.status(500).json({ message: "Couldn't load contact messages" });
+    }
+};
+
+module.exports = { getStats, getUsers, setUserPassword, getContactMessages };

@@ -10,16 +10,6 @@ export const login = async ({ identifier, password }) => {
     return response.data;
 };
 
-export const verifyEmail = async (token) => {
-    const response = await api.post("/api/auth/verify-email", { token });
-    return response.data;
-};
-
-export const resendVerification = async (email) => {
-    const response = await api.post("/api/auth/resend-verification", { email });
-    return response.data;
-};
-
 export const forgotPassword = async (email) => {
     const response = await api.post("/api/auth/forgot-password", { email });
     return response.data;

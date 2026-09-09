@@ -22,9 +22,17 @@ import {
   CartesianGrid,
 } from "recharts";
 
-import { getAdminStats } from "../services/adminService";
+import { getAdminStats, getAdminUsers, getAdminContactMessages } from "../services/adminService";
 import AmbientBackground from "../components/AmbientBackground";
+import AdminUsersTable from "../components/admin/AdminUsersTable";
+import AdminInboxList from "../components/admin/AdminInboxList";
 import { STATUS_CHART_COLORS, PRIORITY_CHART_COLORS } from "../utils/categoryColors";
+
+const TABS = [
+  { id: "overview", label: "Overview" },
+  { id: "users", label: "Users" },
+  { id: "inbox", label: "Inbox" },
+];
 
 const tooltipStyle = {
   background: "rgb(var(--color-panel))",
@@ -75,16 +83,25 @@ const ChartCard = ({ title, children, delay = 0 }) => (
 const shortDate = (iso) => new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 
 const AdminDashboard = () => {
+  const [tab, setTab] = useState("overview");
   const [stats, setStats] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       try {
-        const data = await getAdminStats();
-        setStats(data);
+        const [statsData, usersData, messagesData] = await Promise.all([
+          getAdminStats(),
+          getAdminUsers(),
+          getAdminContactMessages(),
+        ]);
+        setStats(statsData);
+        setUsers(usersData);
+        setMessages(messagesData);
       } catch {
-        toast.error("Couldn't load admin stats");
+        toast.error("Couldn't load admin data");
       } finally {
         setLoading(false);
       }
@@ -126,6 +143,37 @@ const AdminDashboard = () => {
           <p className="text-subtle mt-1">The founder's view of FlowSync — not visible to other users.</p>
         </motion.div>
 
+        <div className="flex gap-1 mb-8 bg-line/[0.03] border border-line/10 rounded-2xl p-1 w-fit">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`relative px-5 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                tab === t.id ? "text-black" : "text-muted hover:text-fg"
+              }`}
+            >
+              {tab === t.id && (
+                <motion.span
+                  layoutId="admin-tab-active"
+                  className="absolute inset-0 bg-cyan-500 rounded-xl -z-10"
+                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                />
+              )}
+              {t.label}
+              {t.id === "inbox" && messages.length > 0 && (
+                <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-fuchsia-500 text-white text-[10px] font-bold align-middle">
+                  {messages.length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {tab === "users" && <AdminUsersTable users={users} />}
+        {tab === "inbox" && <AdminInboxList messages={messages} />}
+
+        {tab === "overview" && (
+          <>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-5 mb-10">
           <StatCard label="Total Users" value={stats.totals.users} icon={<FaUsers size={28} className="text-cyan-400/70" />} delay={0.02} />
           <StatCard label="Active (7d)" value={stats.activeUsers.weekly} icon={<FaUserClock size={28} className="text-indigo-400/70" />} delay={0.06} />
@@ -240,6 +288,8 @@ const AdminDashboard = () => {
             </div>
           )}
         </motion.div>
+          </>
+        )}
       </div>
     </div>
   );

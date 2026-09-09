@@ -1,20 +1,22 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { FiUser, FiAtSign, FiMail } from "react-icons/fi";
 import { signup } from "../services/authService";
 import AuthLayout from "../components/AuthLayout";
 import PasswordInput from "../components/PasswordInput";
+import { useTheme } from "../context/ThemeContext";
 
 const Signup = () => {
+  const navigate = useNavigate();
+  const { setThemeFromServer } = useTheme();
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [submittedEmail, setSubmittedEmail] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,9 +24,12 @@ const Signup = () => {
     setLoading(true);
 
     try {
-      await signup({ name, username, email, password });
-      toast.success("Account created — check your email to verify");
-      setSubmittedEmail(email);
+      const data = await signup({ name, username, email, password });
+      localStorage.setItem("flowsync_token", data.token);
+      localStorage.setItem("flowsync_user", JSON.stringify(data.user));
+      setThemeFromServer(data.user.theme);
+      toast.success(`Welcome to FlowSync, ${data.user.name.split(" ")[0]}`);
+      navigate("/dashboard");
     } catch (err) {
       const message = err.response?.data?.message || "Signup failed";
       setError(message);
@@ -33,26 +38,6 @@ const Signup = () => {
       setLoading(false);
     }
   };
-
-  if (submittedEmail) {
-    return (
-      <AuthLayout eyebrow="Almost there" title="Check your inbox 📬">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center py-2"
-        >
-          <p className="text-muted text-sm leading-relaxed mb-6">
-            We sent a verification link to <span className="text-fg">{submittedEmail}</span>.
-            Verify your email, then log in.
-          </p>
-          <Link to="/login" className="text-cyan-400 hover:underline text-sm">
-            Go to Log In
-          </Link>
-        </motion.div>
-      </AuthLayout>
-    );
-  }
 
   return (
     <AuthLayout eyebrow="Get started" title="Create your account" subtitle="Free — no card required">

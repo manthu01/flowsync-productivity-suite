@@ -3,7 +3,6 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaBars, FaTimes } from "react-icons/fa";
 import { FiUserPlus } from "react-icons/fi";
-import { FaShieldHalved } from "react-icons/fa6";
 import { getToken, getStoredUser, logout } from "../services/authService";
 import { getPendingRequests } from "../services/friendService";
 import Avatar from "./Avatar";
@@ -92,16 +91,6 @@ const Navbar = () => {
                   </span>
                 )}
               </Link>
-              {user?.is_admin && (
-                <Link
-                  to="/admin"
-                  data-cursor-hover
-                  aria-label="Admin dashboard"
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-fg bg-line/5 hover:bg-line/10 border border-line/10 transition-colors"
-                >
-                  <FaShieldHalved size={16} />
-                </Link>
-              )}
               <Link to="/profile" data-cursor-hover aria-label="Profile">
                 <Avatar src={user?.avatar_url} name={user?.name} size="md" />
               </Link>
@@ -193,16 +182,6 @@ const Navbar = () => {
                       </span>
                     )}
                   </Link>
-                  {user?.is_admin && (
-                    <Link
-                      to="/admin"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-fg"
-                    >
-                      <FaShieldHalved size={16} />
-                      Admin
-                    </Link>
-                  )}
                   <button
                     onClick={handleLogout}
                     className="text-left px-3 py-2.5 rounded-lg text-sm font-medium text-red-400"

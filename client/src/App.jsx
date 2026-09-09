@@ -22,7 +22,6 @@ import Friends from "./pages/Friends";
 import AdminDashboard from "./pages/AdminDashboard";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import VerifyEmail from "./pages/VerifyEmail";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 
@@ -122,14 +121,6 @@ const AnimatedRoutes = () => {
           element={
             <PageTransition>
               <Signup />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/verify-email"
-          element={
-            <PageTransition>
-              <VerifyEmail />
             </PageTransition>
           }
         />

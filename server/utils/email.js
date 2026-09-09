@@ -1,27 +1,17 @@
-const nodemailer = require("nodemailer");
+// Sends transactional email via Brevo's HTTPS API (not raw SMTP) — Render's free tier
+// blocks outbound SMTP entirely (confirmed: both port 465 and 587 timed out), so an
+// API-over-HTTPS provider is the only free option that actually works there. Brevo's
+// free tier needs only a single verified sender email, not a whole domain.
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
 
-// Free-forever alternative to a paid/domain-verified sender: Gmail SMTP via an App
-// Password. Requires 2-Step Verification enabled on the sending Google account.
-// Explicit host/port 587 with STARTTLS rather than the "gmail" shorthand (which
-// defaults to port 465) — some hosts (e.g. Render's free tier) block 465 outbound
-// but leave 587 open, since it's the standard authenticated-submission port.
-const transporter =
-    process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD
-        ? nodemailer.createTransport({
-              host: "smtp.gmail.com",
-              port: 587,
-              secure: false,
-              requireTLS: true,
-              auth: {
-                  user: process.env.GMAIL_USER,
-                  pass: process.env.GMAIL_APP_PASSWORD,
-              },
-          })
-        : null;
-
-const FROM =
-    process.env.EMAIL_FROM || (process.env.GMAIL_USER ? `FlowSync <${process.env.GMAIL_USER}>` : "FlowSync");
+const FROM = process.env.EMAIL_FROM || "FlowSync <no-reply@flowsync.app>";
 const APP_URL = process.env.APP_URL || "http://localhost:5173";
+
+// Splits "FlowSync <someone@example.com>" into { name, email } for Brevo's API shape.
+const parseFrom = (from) => {
+    const match = from.match(/^(.*?)\s*<(.+)>$/);
+    return match ? { name: match[1] || "FlowSync", email: match[2] } : { name: "FlowSync", email: from };
+};
 
 const wrapper = (title, bodyHtml) => `
 <div style="background:#030303;padding:40px 20px;font-family:Inter,Arial,sans-serif;">
@@ -40,28 +30,34 @@ const escapeHtml = (str) =>
     str.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 const send = async ({ to, subject, html }) => {
-    if (!transporter) {
+    if (!BREVO_API_KEY) {
         const link = html.match(/href="([^"]+)"/)?.[1];
-        console.log(`[email:skipped - no GMAIL_USER/GMAIL_APP_PASSWORD] To: ${to} | Subject: ${subject}`);
+        console.log(`[email:skipped - no BREVO_API_KEY] To: ${to} | Subject: ${subject}`);
         if (link) console.log(`  Link: ${link}`);
         return { skipped: true };
     }
 
-    // Unlike Resend's SDK, nodemailer rejects the promise on a real send failure, so
-    // callers' existing catch blocks work as-is.
-    return transporter.sendMail({ from: FROM, to, subject, html });
-};
-
-const sendVerificationEmail = (to, token) => {
-    const link = `${APP_URL}/verify-email?token=${token}`;
-    return send({
-        to,
-        subject: "Verify your FlowSync account",
-        html: wrapper(
-            "Confirm your email to activate your account",
-            `<p style="color:#d4d4d8;font-size:15px;line-height:1.6;">Welcome to FlowSync! Click below to verify your email address. This link expires in 24 hours.</p>${button(link, "Verify Email")}`
-        ),
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+            "api-key": BREVO_API_KEY,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+        },
+        body: JSON.stringify({
+            sender: parseFrom(FROM),
+            to: [{ email: to }],
+            subject,
+            htmlContent: html,
+        }),
     });
+
+    if (!response.ok) {
+        const body = await response.text();
+        throw new Error(`Brevo API error ${response.status}: ${body}`);
+    }
+
+    return response.json();
 };
 
 const sendResetEmail = (to, token) => {
@@ -94,4 +90,4 @@ const sendContactNotification = ({ name, email, message }) => {
     });
 };
 
-module.exports = { sendVerificationEmail, sendResetEmail, sendContactNotification };
+module.exports = { sendResetEmail, sendContactNotification };
