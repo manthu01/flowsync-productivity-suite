@@ -1,23 +1,23 @@
 CREATE TABLE IF NOT EXISTS users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     is_verified BOOLEAN NOT NULL DEFAULT FALSE,
     verification_token VARCHAR(255),
-    verification_expires DATETIME,
+    verification_expires TIMESTAMP,
     reset_token VARCHAR(255),
-    reset_expires DATETIME,
+    reset_expires TIMESTAMP,
     avatar_url VARCHAR(500),
-    theme ENUM('light', 'dark') NOT NULL DEFAULT 'dark',
-    username_changed_at DATETIME,
-    last_login_at DATETIME,
+    theme VARCHAR(10) NOT NULL DEFAULT 'dark' CHECK (theme IN ('light', 'dark')),
+    username_changed_at TIMESTAMP,
+    last_login_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS tasks (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     status VARCHAR(50) DEFAULT 'In Progress',
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS tasks (
 );
 
 CREATE TABLE IF NOT EXISTS subtasks (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     task_id INT NOT NULL,
     title VARCHAR(255) NOT NULL,
     is_completed BOOLEAN NOT NULL DEFAULT FALSE,
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS subtasks (
 );
 
 CREATE TABLE IF NOT EXISTS contact_messages (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
@@ -48,15 +48,15 @@ CREATE TABLE IF NOT EXISTS contact_messages (
 );
 
 CREATE TABLE IF NOT EXISTS friend_requests (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     sender_id INT NOT NULL,
     receiver_id INT NOT NULL,
-    status ENUM('pending', 'accepted') NOT NULL DEFAULT 'pending',
+    status VARCHAR(10) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     responded_at TIMESTAMP NULL,
     FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE KEY idx_friend_pair (sender_id, receiver_id)
+    UNIQUE (sender_id, receiver_id)
 );
 
 CREATE TABLE IF NOT EXISTS starred_friends (

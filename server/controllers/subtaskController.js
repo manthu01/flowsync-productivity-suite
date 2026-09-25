@@ -42,7 +42,7 @@ const createSubtask = async (req, res) => {
         if (!owned) return res.status(404).json({ message: "Task not found" });
 
         db.query(
-            "SELECT COALESCE(MAX(position), -1) + 1 AS nextPosition FROM subtasks WHERE task_id = ?",
+            'SELECT COALESCE(MAX(position), -1) + 1 AS "nextPosition" FROM subtasks WHERE task_id = ?',
             [taskId],
             (posErr, posResult) => {
                 if (posErr) return res.status(500).json({ message: "Couldn't create subtask" });
@@ -50,7 +50,7 @@ const createSubtask = async (req, res) => {
                 const position = posResult[0].nextPosition;
 
                 db.query(
-                    "INSERT INTO subtasks (task_id, title, position) VALUES (?, ?, ?)",
+                    "INSERT INTO subtasks (task_id, title, position) VALUES (?, ?, ?) RETURNING id",
                     [taskId, title.trim(), position],
                     (err, result) => {
                         if (err) return res.status(500).json({ message: "Couldn't create subtask" });

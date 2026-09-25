@@ -38,12 +38,13 @@ const signup = async (req, res) => {
         const query = `
             INSERT INTO users (name, username, email, password, is_verified)
             VALUES (?, ?, ?, ?, TRUE)
+            RETURNING id
         `;
 
         db.query(query, [name, username, email, hashedPassword], (err, result) => {
             if (err) {
-                if (err.code === "ER_DUP_ENTRY") {
-                    const field = err.sqlMessage?.includes("username") ? "Username" : "Email";
+                if (err.code === "23505") {
+                    const field = err.constraint?.includes("username") ? "Username" : "Email";
                     return res.status(409).json({ message: `${field} already in use` });
                 }
                 return res.status(500).json({ message: "Signup failed" });

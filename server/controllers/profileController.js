@@ -65,7 +65,7 @@ const updateUsername = (req, res) => {
                 [username, req.userId],
                 (updateErr) => {
                     if (updateErr) {
-                        if (updateErr.code === "ER_DUP_ENTRY") {
+                        if (updateErr.code === "23505") {
                             return res.status(409).json({ message: "That username is already taken" });
                         }
                         return res.status(500).json({ message: "Couldn't update username" });

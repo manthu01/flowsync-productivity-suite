@@ -12,7 +12,7 @@ const SIGNUP_WINDOW_DAYS = 30;
 // so the chart doesn't have gaps on days with no signups. Bucketed in UTC to match
 // how the DB's DATE_FORMAT groups timestamps.
 const buildDailySeries = (rows) => {
-    const byDay = new Map(rows.map((r) => [r.day, r.count]));
+    const byDay = new Map(rows.map((r) => [r.day, Number(r.count)]));
     const today = new Date();
     const utcToday = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
 
@@ -41,18 +41,18 @@ const getStats = async (req, res) => {
             priorityRows,
             recentSignups,
         ] = await Promise.all([
-            query("SELECT COUNT(*) AS totalUsers FROM users"),
-            query("SELECT COUNT(*) AS totalTasks FROM tasks"),
-            query("SELECT COUNT(*) AS completedTasks FROM tasks WHERE status = 'Completed'"),
-            query("SELECT COUNT(*) AS totalSubtasks FROM subtasks"),
-            query("SELECT COUNT(*) AS totalContactMessages FROM contact_messages"),
-            query("SELECT COUNT(*) AS totalFriendships FROM friend_requests WHERE status = 'accepted'"),
-            query("SELECT COUNT(*) AS weeklyActive FROM users WHERE last_login_at >= NOW() - INTERVAL 7 DAY"),
-            query("SELECT COUNT(*) AS monthlyActive FROM users WHERE last_login_at >= NOW() - INTERVAL 30 DAY"),
+            query('SELECT COUNT(*) AS "totalUsers" FROM users'),
+            query('SELECT COUNT(*) AS "totalTasks" FROM tasks'),
+            query("SELECT COUNT(*) AS \"completedTasks\" FROM tasks WHERE status = 'Completed'"),
+            query('SELECT COUNT(*) AS "totalSubtasks" FROM subtasks'),
+            query('SELECT COUNT(*) AS "totalContactMessages" FROM contact_messages'),
+            query("SELECT COUNT(*) AS \"totalFriendships\" FROM friend_requests WHERE status = 'accepted'"),
+            query("SELECT COUNT(*) AS \"weeklyActive\" FROM users WHERE last_login_at >= NOW() - INTERVAL '7 days'"),
+            query("SELECT COUNT(*) AS \"monthlyActive\" FROM users WHERE last_login_at >= NOW() - INTERVAL '30 days'"),
             query(
-                `SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS day, COUNT(*) AS count
+                `SELECT TO_CHAR(created_at, 'YYYY-MM-DD') AS day, COUNT(*) AS count
                  FROM users
-                 WHERE created_at >= NOW() - INTERVAL ? DAY
+                 WHERE created_at >= NOW() - make_interval(days => ?)
                  GROUP BY day`,
                 [SIGNUP_WINDOW_DAYS]
             ),
@@ -66,18 +66,18 @@ const getStats = async (req, res) => {
 
         res.status(200).json({
             totals: {
-                users: totalUsers,
-                tasks: totalTasks,
-                completedTasks,
-                subtasks: totalSubtasks,
-                contactMessages: totalContactMessages,
-                friendships: totalFriendships,
+                users: Number(totalUsers),
+                tasks: Number(totalTasks),
+                completedTasks: Number(completedTasks),
+                subtasks: Number(totalSubtasks),
+                contactMessages: Number(totalContactMessages),
+                friendships: Number(totalFriendships),
             },
-            activeUsers: { weekly: weeklyActive, monthly: monthlyActive },
+            activeUsers: { weekly: Number(weeklyActive), monthly: Number(monthlyActive) },
             signupsByDay: buildDailySeries(signupRows),
-            tasksByCategory: categoryRows,
-            tasksByStatus: statusRows,
-            tasksByPriority: priorityRows,
+            tasksByCategory: categoryRows.map((r) => ({ ...r, count: Number(r.count) })),
+            tasksByStatus: statusRows.map((r) => ({ ...r, count: Number(r.count) })),
+            tasksByPriority: priorityRows.map((r) => ({ ...r, count: Number(r.count) })),
             recentSignups,
         });
     } catch (error) {
