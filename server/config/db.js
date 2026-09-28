@@ -1,4 +1,5 @@
 const { Pool } = require("pg");
+const logger = require("../utils/logger");
 
 // Neon (and most managed Postgres) requires TLS but hands out a cert chain that
 // node's default trust store doesn't always resolve cleanly through — same
@@ -48,9 +49,9 @@ const query = (sql, paramsOrCallback, maybeCallback) => {
 
 pool.connect((err, client, release) => {
     if (err) {
-        console.log("Database connection failed:", err.message);
+        logger.error({ err }, "Database connection failed");
     } else {
-        console.log("Connected to PostgreSQL database");
+        logger.info("Connected to PostgreSQL database");
         release();
     }
 });

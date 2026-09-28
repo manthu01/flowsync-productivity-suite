@@ -22,16 +22,18 @@ import {
   CartesianGrid,
 } from "recharts";
 
-import { getAdminStats, getAdminUsers, getAdminContactMessages } from "../services/adminService";
+import { getAdminStats } from "../services/adminService";
 import AmbientBackground from "../components/AmbientBackground";
 import AdminUsersTable from "../components/admin/AdminUsersTable";
 import AdminInboxList from "../components/admin/AdminInboxList";
+import AdminAuditLog from "../components/admin/AdminAuditLog";
 import { STATUS_CHART_COLORS, PRIORITY_CHART_COLORS } from "../utils/categoryColors";
 
 const TABS = [
   { id: "overview", label: "Overview" },
   { id: "users", label: "Users" },
   { id: "inbox", label: "Inbox" },
+  { id: "audit", label: "Audit Log" },
 ];
 
 const tooltipStyle = {
@@ -85,21 +87,12 @@ const shortDate = (iso) => new Date(iso).toLocaleDateString(undefined, { month: 
 const AdminDashboard = () => {
   const [tab, setTab] = useState("overview");
   const [stats, setStats] = useState(null);
-  const [users, setUsers] = useState([]);
-  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       try {
-        const [statsData, usersData, messagesData] = await Promise.all([
-          getAdminStats(),
-          getAdminUsers(),
-          getAdminContactMessages(),
-        ]);
-        setStats(statsData);
-        setUsers(usersData);
-        setMessages(messagesData);
+        setStats(await getAdminStats());
       } catch {
         toast.error("Couldn't load admin data");
       } finally {
@@ -160,17 +153,18 @@ const AdminDashboard = () => {
                 />
               )}
               {t.label}
-              {t.id === "inbox" && messages.length > 0 && (
+              {t.id === "inbox" && stats.totals.contactMessages > 0 && (
                 <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-fuchsia-500 text-white text-[10px] font-bold align-middle">
-                  {messages.length}
+                  {stats.totals.contactMessages}
                 </span>
               )}
             </button>
           ))}
         </div>
 
-        {tab === "users" && <AdminUsersTable users={users} />}
-        {tab === "inbox" && <AdminInboxList messages={messages} />}
+        {tab === "users" && <AdminUsersTable />}
+        {tab === "inbox" && <AdminInboxList />}
+        {tab === "audit" && <AdminAuditLog />}
 
         {tab === "overview" && (
           <>

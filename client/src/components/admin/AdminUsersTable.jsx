@@ -1,8 +1,12 @@
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { FiSearch, FiKey } from "react-icons/fi";
-import { setUserPassword } from "../../services/adminService";
+import { getAdminUsers, setUserPassword } from "../../services/adminService";
+import AdminPagination from "./AdminPagination";
+
+const PAGE_SIZE = 20;
+const SEARCH_DEBOUNCE_MS = 300;
 
 const shortDate = (iso) =>
   iso ? new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "—";
@@ -66,17 +70,44 @@ const PasswordEditor = ({ userId, onClose }) => {
   );
 };
 
-const AdminUsersTable = ({ users }) => {
+const AdminUsersTable = () => {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [users, setUsers] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter(
-      (u) => u.name.toLowerCase().includes(q) || u.username.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
-    );
-  }, [users, search]);
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(handle);
+  }, [search]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+
+    getAdminUsers({ search: debouncedSearch, page, pageSize: PAGE_SIZE })
+      .then((data) => {
+        if (cancelled) return;
+        setUsers(data.users);
+        setTotal(data.total);
+      })
+      .catch(() => {
+        if (!cancelled) toast.error("Couldn't load users");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedSearch, page]);
 
   return (
     <motion.div
@@ -88,7 +119,7 @@ const AdminUsersTable = ({ users }) => {
       <div className="p-6 pb-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">All Users</h2>
-          <span className="text-subtle text-sm">{filtered.length} of {users.length}</span>
+          <span className="text-subtle text-sm">{total} total</span>
         </div>
         <div className="relative">
           <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-subtle" size={15} />
@@ -102,7 +133,7 @@ const AdminUsersTable = ({ users }) => {
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {!loading && users.length === 0 ? (
         <div className="p-10 text-center text-subtle border-t border-line/10">No users match that search.</div>
       ) : (
         <div className="overflow-x-auto">
@@ -118,7 +149,7 @@ const AdminUsersTable = ({ users }) => {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((u) => (
+              {users.map((u) => (
                 <Fragment key={u.id}>
                   <tr className="border-t border-line/10 hover:bg-line/[0.03] transition-colors">
                     <td className="px-6 py-3 font-medium">{u.name}</td>
@@ -150,6 +181,8 @@ const AdminUsersTable = ({ users }) => {
           </table>
         </div>
       )}
+
+      <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
     </motion.div>
   );
 };

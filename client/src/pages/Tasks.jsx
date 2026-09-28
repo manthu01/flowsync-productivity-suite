@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
-import { FiType, FiAlignLeft, FiCalendar, FiSearch } from "react-icons/fi";
+import { FiType, FiAlignLeft, FiCalendar, FiSearch, FiUsers } from "react-icons/fi";
+import { connectSocket } from "../services/socket";
 
 import {
   getTasks,
@@ -89,6 +90,19 @@ const Tasks = () => {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const socket = connectSocket();
+    if (!socket) return;
+
+    // Any change to a task this user owns or collaborates on — by them, in another
+    // tab, or by a collaborator elsewhere — triggers a silent refetch here.
+    const handleTasksChanged = () => fetchTasks(true);
+    socket.on("tasks:changed", handleTasksChanged);
+
+    return () => socket.off("tasks:changed", handleTasksChanged);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -332,7 +346,26 @@ const Tasks = () => {
                     className="cursor-pointer bg-line/[0.03] backdrop-blur-lg border border-line/10 p-6 rounded-3xl hover:border-line/20 hover:-translate-y-1 transition-all duration-300"
                   >
                     <div className="mb-4">
-                      <h3 className="text-xl font-semibold">{task.title}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-xl font-semibold">{task.title}</h3>
+                        {task.is_owner === false ? (
+                          <span
+                            title={`Shared by ${task.owner_name}`}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/30"
+                          >
+                            <FiUsers size={10} /> {task.owner_name}
+                          </span>
+                        ) : (
+                          task.collaborator_count > 0 && (
+                            <span
+                              title="Shared with others"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-line/5 text-muted border border-line/10"
+                            >
+                              <FiUsers size={10} /> {task.collaborator_count}
+                            </span>
+                          )
+                        )}
+                      </div>
                       {task.description && (
                         <p className="text-subtle mt-1.5 text-sm line-clamp-2">
                           {task.description}
@@ -406,13 +439,15 @@ const Tasks = () => {
                       >
                         {task.status === "Completed" ? "Mark In Progress" : "Mark Completed"}
                       </button>
-                      <button
-                        onClick={() => handleDeleteTask(task.id)}
-                        data-cursor-hover
-                        className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 transition-colors px-4 py-2 rounded-xl font-medium text-sm"
-                      >
-                        Delete
-                      </button>
+                      {task.is_owner !== false && (
+                        <button
+                          onClick={() => handleDeleteTask(task.id)}
+                          data-cursor-hover
+                          className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 transition-colors px-4 py-2 rounded-xl font-medium text-sm"
+                        >
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </motion.div>
                 );

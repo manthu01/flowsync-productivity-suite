@@ -101,6 +101,28 @@ const run = (sql, label) =>
         "create starred_friends table"
     );
 
+    await run(
+        `CREATE TABLE IF NOT EXISTS task_collaborators (
+            task_id INT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+            user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (task_id, user_id)
+        )`,
+        "create task_collaborators table"
+    );
+
+    await run(
+        `CREATE TABLE IF NOT EXISTS admin_actions (
+            id SERIAL PRIMARY KEY,
+            admin_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            action VARCHAR(50) NOT NULL,
+            target_user_id INT REFERENCES users(id) ON DELETE SET NULL,
+            details TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`,
+        "create admin_actions table"
+    );
+
     console.log("Migration complete.");
     process.exit(0);
 })();

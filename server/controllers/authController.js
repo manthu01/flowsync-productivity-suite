@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const { generateToken } = require("../utils/tokens");
 const { sendResetEmail } = require("../utils/email");
 const { isAdminEmail } = require("../utils/admin");
+const logger = require("../utils/logger");
 
 const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,20}$/;
 const RESET_TTL_MS = 60 * 60 * 1000; // 1h
@@ -82,7 +83,8 @@ const login = (req, res) => {
 
     db.query(query, [identifier, identifier], async (err, result) => {
         if (err) {
-            return res.status(500).json(err);
+            logger.error({ err }, "Login failed");
+            return res.status(500).json({ message: "Login failed" });
         }
 
         if (result.length === 0) {
@@ -143,7 +145,7 @@ const forgotPassword = (req, res) => {
                         try {
                             await sendResetEmail(email, resetToken);
                         } catch (emailError) {
-                            console.error("Failed to send reset email:", emailError.message);
+                            logger.error({ err: emailError }, "Failed to send reset email");
                         }
                     }
                 }

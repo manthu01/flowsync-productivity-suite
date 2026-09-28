@@ -21,3 +21,18 @@ export const updateTaskStatus = async (id, status) => {
     const response = await api.put(`${TASKS_URL}/${id}`, status);
     return response.data;
 };
+
+export const getCollaborators = async (id) => {
+    const response = await api.get(`${TASKS_URL}/${id}/collaborators`);
+    return response.data;
+};
+
+export const shareTask = async (id, username) => {
+    const response = await api.post(`${TASKS_URL}/${id}/share`, { username });
+    return response.data;
+};
+
+export const unshareTask = async (id, userId) => {
+    const response = await api.delete(`${TASKS_URL}/${id}/share/${userId}`);
+    return response.data;
+};

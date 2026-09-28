@@ -1,5 +1,6 @@
 const db = require("../config/db");
 const { sendContactNotification } = require("../utils/email");
+const logger = require("../utils/logger");
 
 const submitContactMessage = (req, res) => {
     const { name, email, message } = req.body;
@@ -19,7 +20,7 @@ const submitContactMessage = (req, res) => {
         try {
             await sendContactNotification(trimmed);
         } catch (emailError) {
-            console.error("Failed to send contact notification email:", emailError.message);
+            logger.error({ err: emailError }, "Failed to send contact notification email");
         }
 
         res.status(201).json({ message: "Message sent! We'll get back to you soon." });

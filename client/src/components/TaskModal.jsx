@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
+import { FiUsers } from "react-icons/fi";
 import { CATEGORIES } from "../utils/categoryColors";
 import SubtaskList from "./SubtaskList";
+import TaskCollaborators from "./TaskCollaborators";
 import {
   getSubtasks,
   createSubtask,
@@ -42,7 +44,13 @@ const TaskModal = ({ task, onClose, onSave, onDelete, onSubtasksChanged }) => {
     }
   }, [task]);
 
-  if (!task) return null;
+  // Guards on `form`, not just `task`: right after `task` flips from null to a real
+  // task, `form` is still the stale value from the previous render until the sync
+  // effect above catches up on the next tick — rendering against `task` in that
+  // one-frame gap would read fields off the wrong (possibly still-null) object.
+  if (!task || !form) return null;
+
+  const isOwner = task.is_owner !== false;
 
   const update = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
@@ -103,7 +111,14 @@ const TaskModal = ({ task, onClose, onSave, onDelete, onSubtasksChanged }) => {
             className="w-full max-w-lg max-h-[88vh] overflow-y-auto bg-panel border border-line/10 rounded-3xl p-7 shadow-[0_0_60px_rgba(0,0,0,0.6)]"
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">Task Details</h2>
+              <div>
+                <h2 className="text-xl font-bold">Task Details</h2>
+                {!isOwner && (
+                  <p className="flex items-center gap-1.5 text-xs text-subtle mt-1">
+                    <FiUsers size={12} /> Shared by {task.owner_name}
+                  </p>
+                )}
+              </div>
               <button
                 onClick={onClose}
                 data-cursor-hover
@@ -193,6 +208,18 @@ const TaskModal = ({ task, onClose, onSave, onDelete, onSubtasksChanged }) => {
               />
             )}
 
+            {isOwner && (
+              <>
+                <div className="h-px bg-line/10 my-6" />
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs text-subtle flex items-center gap-1.5">
+                    <FiUsers size={12} /> Shared with
+                  </label>
+                  <TaskCollaborators taskId={task.id} onChanged={() => onSubtasksChanged?.()} />
+                </div>
+              </>
+            )}
+
             <div className="flex gap-3 mt-7">
               <motion.button
                 whileHover={{ scale: 1.015 }}
@@ -202,14 +229,16 @@ const TaskModal = ({ task, onClose, onSave, onDelete, onSubtasksChanged }) => {
               >
                 Save Changes
               </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.015 }}
-                whileTap={{ scale: 0.985 }}
-                onClick={() => onDelete(form.id)}
-                className="px-5 py-2.5 rounded-xl font-semibold bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors"
-              >
-                Delete
-              </motion.button>
+              {isOwner && (
+                <motion.button
+                  whileHover={{ scale: 1.015 }}
+                  whileTap={{ scale: 0.985 }}
+                  onClick={() => onDelete(form.id)}
+                  className="px-5 py-2.5 rounded-xl font-semibold bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors"
+                >
+                  Delete
+                </motion.button>
+              )}
             </div>
           </motion.div>
         </motion.div>

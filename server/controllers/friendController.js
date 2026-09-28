@@ -237,4 +237,5 @@ module.exports = {
     removeFriend,
     starFriend,
     unstarFriend,
+    verifyIsFriend,
 };

@@ -23,6 +23,9 @@ export const resetPassword = async (token, password) => {
 export const logout = () => {
     localStorage.removeItem("flowsync_token");
     localStorage.removeItem("flowsync_user");
+    // Lazy import avoids a circular dependency (socket.js itself imports getToken
+    // from this file).
+    import("./socket").then(({ disconnectSocket }) => disconnectSocket());
 };
 
 export const getToken = () => localStorage.getItem("flowsync_token");

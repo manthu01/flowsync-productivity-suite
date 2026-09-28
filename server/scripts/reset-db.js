@@ -11,7 +11,7 @@
 require("dotenv").config();
 const db = require("../config/db");
 
-const TABLES = ["starred_friends", "friend_requests", "subtasks", "contact_messages", "tasks", "users"];
+const TABLES = ["admin_actions", "task_collaborators", "starred_friends", "friend_requests", "subtasks", "contact_messages", "tasks", "users"];
 
 const run = (sql) =>
     new Promise((resolve, reject) => {

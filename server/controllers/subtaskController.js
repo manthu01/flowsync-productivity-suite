@@ -1,20 +1,13 @@
 const db = require("../config/db");
-
-// Confirms the parent task belongs to the requesting user before touching subtasks
-const verifyTaskOwnership = (taskId, userId) =>
-    new Promise((resolve, reject) => {
-        db.query("SELECT id FROM tasks WHERE id = ? AND user_id = ?", [taskId, userId], (err, result) => {
-            if (err) return reject(err);
-            resolve(result.length > 0);
-        });
-    });
+const { hasTaskAccess, getTaskWatchers } = require("../utils/taskAccess");
+const { notifyTaskChanged } = require("../realtime");
 
 const getSubtasks = async (req, res) => {
     const { taskId } = req.params;
 
     try {
-        const owned = await verifyTaskOwnership(taskId, req.userId);
-        if (!owned) return res.status(404).json({ message: "Task not found" });
+        const allowed = await hasTaskAccess(taskId, req.userId);
+        if (!allowed) return res.status(404).json({ message: "Task not found" });
 
         db.query(
             "SELECT * FROM subtasks WHERE task_id = ? ORDER BY position ASC, id ASC",
@@ -38,8 +31,8 @@ const createSubtask = async (req, res) => {
     }
 
     try {
-        const owned = await verifyTaskOwnership(taskId, req.userId);
-        if (!owned) return res.status(404).json({ message: "Task not found" });
+        const allowed = await hasTaskAccess(taskId, req.userId);
+        if (!allowed) return res.status(404).json({ message: "Task not found" });
 
         db.query(
             'SELECT COALESCE(MAX(position), -1) + 1 AS "nextPosition" FROM subtasks WHERE task_id = ?',
@@ -52,9 +45,10 @@ const createSubtask = async (req, res) => {
                 db.query(
                     "INSERT INTO subtasks (task_id, title, position) VALUES (?, ?, ?) RETURNING id",
                     [taskId, title.trim(), position],
-                    (err, result) => {
+                    async (err, result) => {
                         if (err) return res.status(500).json({ message: "Couldn't create subtask" });
 
+                        notifyTaskChanged(await getTaskWatchers(taskId));
                         res.status(201).json({
                             id: result.insertId,
                             task_id: Number(taskId),
@@ -76,8 +70,8 @@ const updateSubtask = async (req, res) => {
     const { title, is_completed } = req.body;
 
     try {
-        const owned = await verifyTaskOwnership(taskId, req.userId);
-        if (!owned) return res.status(404).json({ message: "Task not found" });
+        const allowed = await hasTaskAccess(taskId, req.userId);
+        if (!allowed) return res.status(404).json({ message: "Task not found" });
 
         const fields = [];
         const values = [];
@@ -100,8 +94,9 @@ const updateSubtask = async (req, res) => {
         db.query(
             `UPDATE subtasks SET ${fields.join(", ")} WHERE id = ? AND task_id = ?`,
             values,
-            (err) => {
+            async (err) => {
                 if (err) return res.status(500).json({ message: "Couldn't update subtask" });
+                notifyTaskChanged(await getTaskWatchers(taskId));
                 res.status(200).json({ message: "Subtask updated" });
             }
         );
@@ -114,11 +109,12 @@ const deleteSubtask = async (req, res) => {
     const { taskId, id } = req.params;
 
     try {
-        const owned = await verifyTaskOwnership(taskId, req.userId);
-        if (!owned) return res.status(404).json({ message: "Task not found" });
+        const allowed = await hasTaskAccess(taskId, req.userId);
+        if (!allowed) return res.status(404).json({ message: "Task not found" });
 
-        db.query("DELETE FROM subtasks WHERE id = ? AND task_id = ?", [id, taskId], (err) => {
+        db.query("DELETE FROM subtasks WHERE id = ? AND task_id = ?", [id, taskId], async (err) => {
             if (err) return res.status(500).json({ message: "Couldn't delete subtask" });
+            notifyTaskChanged(await getTaskWatchers(taskId));
             res.status(200).json({ message: "Subtask deleted" });
         });
     } catch (error) {

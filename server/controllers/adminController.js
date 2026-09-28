@@ -85,15 +85,36 @@ const getStats = async (req, res) => {
     }
 };
 
-// Full user list for the admin panel. No pagination yet — fine at this scale, and
-// simplest to reach for a search box on the frontend without a second round trip.
+const DEFAULT_PAGE_SIZE = 20;
+const MAX_PAGE_SIZE = 100;
+
+// Clamps ?page and ?pageSize into safe positive integers so a bad/missing query
+// string can't produce a negative OFFSET or an unbounded LIMIT.
+const parsePagination = (req) => {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, parseInt(req.query.pageSize, 10) || DEFAULT_PAGE_SIZE));
+    return { page, pageSize, offset: (page - 1) * pageSize };
+};
+
+// Server-side search + pagination — this list grows with total site signups
+// (unlike a single user's own task list), so it needs to stay bounded at scale.
 const getUsers = async (req, res) => {
+    const { page, pageSize, offset } = parsePagination(req);
+    const search = (req.query.search || "").trim();
+
     try {
+        const where = search ? "WHERE name ILIKE ? OR username ILIKE ? OR email ILIKE ?" : "";
+        const searchParams = search ? [`%${search}%`, `%${search}%`, `%${search}%`] : [];
+
+        const [{ total }] = await query(`SELECT COUNT(*) AS total FROM users ${where}`, searchParams);
+
         const users = await query(
             `SELECT id, name, username, email, avatar_url, created_at, last_login_at
-             FROM users ORDER BY created_at DESC`
+             FROM users ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+            [...searchParams, pageSize, offset]
         );
-        res.status(200).json(users);
+
+        res.status(200).json({ users, total: Number(total), page, pageSize });
     } catch (error) {
         res.status(500).json({ message: "Couldn't load users" });
     }
@@ -106,10 +127,6 @@ const setUserPassword = async (req, res) => {
     const { id } = req.params;
     const { password } = req.body;
 
-    if (!password || password.length < 6) {
-        return res.status(400).json({ message: "Password must be at least 6 characters" });
-    }
-
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         const result = await query("UPDATE users SET password = ? WHERE id = ?", [hashedPassword, id]);
@@ -118,6 +135,11 @@ const setUserPassword = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
+        await query(
+            "INSERT INTO admin_actions (admin_id, action, target_user_id) VALUES (?, ?, ?)",
+            [req.userId, "set_password", id]
+        );
+
         res.status(200).json({ message: "Password updated" });
     } catch (error) {
         res.status(500).json({ message: "Couldn't update password" });
@@ -125,12 +147,50 @@ const setUserPassword = async (req, res) => {
 };
 
 const getContactMessages = async (req, res) => {
+    const { page, pageSize, offset } = parsePagination(req);
+    const search = (req.query.search || "").trim();
+
     try {
-        const messages = await query("SELECT * FROM contact_messages ORDER BY created_at DESC");
-        res.status(200).json(messages);
+        const where = search ? "WHERE name ILIKE ? OR email ILIKE ? OR message ILIKE ?" : "";
+        const searchParams = search ? [`%${search}%`, `%${search}%`, `%${search}%`] : [];
+
+        const [{ total }] = await query(`SELECT COUNT(*) AS total FROM contact_messages ${where}`, searchParams);
+
+        const messages = await query(
+            `SELECT * FROM contact_messages ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+            [...searchParams, pageSize, offset]
+        );
+
+        res.status(200).json({ messages, total: Number(total), page, pageSize });
     } catch (error) {
         res.status(500).json({ message: "Couldn't load contact messages" });
     }
 };
 
-module.exports = { getStats, getUsers, setUserPassword, getContactMessages };
+// Who did what to whom, for accountability on admin-only mutations (currently just
+// password resets, but new admin actions should log here too as they're added).
+const getAuditLog = async (req, res) => {
+    const { page, pageSize, offset } = parsePagination(req);
+
+    try {
+        const [{ total }] = await query("SELECT COUNT(*) AS total FROM admin_actions");
+
+        const entries = await query(
+            `SELECT aa.id, aa.action, aa.details, aa.created_at,
+                    admin.name AS admin_name, admin.email AS admin_email,
+                    target.name AS target_name, target.email AS target_email
+             FROM admin_actions aa
+             JOIN users admin ON admin.id = aa.admin_id
+             LEFT JOIN users target ON target.id = aa.target_user_id
+             ORDER BY aa.created_at DESC
+             LIMIT ? OFFSET ?`,
+            [pageSize, offset]
+        );
+
+        res.status(200).json({ entries, total: Number(total), page, pageSize });
+    } catch (error) {
+        res.status(500).json({ message: "Couldn't load audit log" });
+    }
+};
+
+module.exports = { getStats, getUsers, setUserPassword, getContactMessages, getAuditLog };
