@@ -48,11 +48,23 @@ const run = (sql, label) =>
             status VARCHAR(50) DEFAULT 'In Progress',
             priority VARCHAR(50) DEFAULT 'Medium',
             category VARCHAR(50) DEFAULT 'Other',
+            mood VARCHAR(20) DEFAULT 'Chill',
+            recurrence VARCHAR(20) DEFAULT 'None',
             due_date DATE,
             user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`,
         "create tasks table"
+    );
+
+    await run(
+        `ALTER TABLE tasks ADD COLUMN IF NOT EXISTS mood VARCHAR(20) DEFAULT 'Chill'`,
+        "add tasks.mood column"
+    );
+
+    await run(
+        `ALTER TABLE tasks ADD COLUMN IF NOT EXISTS recurrence VARCHAR(20) DEFAULT 'None'`,
+        "add tasks.recurrence column"
     );
 
     await run(

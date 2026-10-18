@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
-import { FiType, FiAlignLeft, FiCalendar, FiSearch, FiUsers } from "react-icons/fi";
+import { FiSearch } from "react-icons/fi";
 import { connectSocket } from "../services/socket";
 
 import {
@@ -14,8 +14,10 @@ import {
 import { logout } from "../services/authService";
 import AmbientBackground from "../components/AmbientBackground";
 import TaskModal from "../components/TaskModal";
+import TaskForge from "../components/TaskForge";
+import TaskCard from "../components/TaskCard";
 import PillSelector from "../components/PillSelector";
-import { CATEGORIES, categoryStyle, priorityStyle } from "../utils/categoryColors";
+import { CATEGORIES, MOODS } from "../utils/categoryColors";
 
 const inputClass =
   "p-3 rounded-xl bg-line/[0.04] border border-line/10 outline-none focus:border-cyan-400/50 transition-colors";
@@ -38,6 +40,14 @@ const CATEGORY_OPTIONS = CATEGORIES.map((c) => ({
   activeClass: CATEGORY_ACTIVE_CLASS[c],
 }));
 
+const MOOD_ACTIVE_CLASS = {
+  Grind: "bg-orange-400",
+  Chill: "bg-sky-400",
+  Creative: "bg-fuchsia-400",
+  Admin: "bg-slate-300",
+};
+const MOOD_OPTIONS = MOODS.map((m) => ({ value: m, label: m, activeClass: MOOD_ACTIVE_CLASS[m] }));
+
 const STATUS_FILTER_OPTIONS = [
   { value: "All", label: "All", activeClass: "bg-line/40" },
   { value: "In Progress", label: "In Progress", activeClass: "bg-indigo-500" },
@@ -45,6 +55,7 @@ const STATUS_FILTER_OPTIONS = [
 ];
 const PRIORITY_FILTER_OPTIONS = [{ value: "All", label: "All", activeClass: "bg-line/40" }, ...PRIORITY_OPTIONS];
 const CATEGORY_FILTER_OPTIONS = [{ value: "All", label: "All", activeClass: "bg-line/40" }, ...CATEGORY_OPTIONS];
+const MOOD_FILTER_OPTIONS = [{ value: "All", label: "All", activeClass: "bg-line/40" }, ...MOOD_OPTIONS];
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
@@ -54,16 +65,11 @@ const Tasks = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState("Medium");
-  const [category, setCategory] = useState("Work");
-  const [dueDate, setDueDate] = useState("");
-
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [categoryFilter, setCategoryFilter] = useState("All");
+  const [moodFilter, setMoodFilter] = useState("All");
 
   const [selectedTask, setSelectedTask] = useState(null);
 
@@ -117,36 +123,22 @@ const Tasks = () => {
         priorityFilter === "All" ? true : task.priority === priorityFilter;
       const matchesCategory =
         categoryFilter === "All" ? true : task.category === categoryFilter;
+      const matchesMood = moodFilter === "All" ? true : task.mood === moodFilter;
 
-      return matchesSearch && matchesStatus && matchesPriority && matchesCategory;
+      return matchesSearch && matchesStatus && matchesPriority && matchesCategory && matchesMood;
     });
-  }, [tasks, searchTerm, statusFilter, priorityFilter, categoryFilter]);
+  }, [tasks, searchTerm, statusFilter, priorityFilter, categoryFilter, moodFilter]);
 
-  const handleCreateTask = async (e) => {
-    e.preventDefault();
-    if (!title.trim()) return;
-
+  // Rethrows on failure so the forge keeps what was typed.
+  const handleCreateTask = async (taskData) => {
     try {
-      await createTask({
-        title,
-        description,
-        status: "In Progress",
-        priority,
-        category,
-        due_date: dueDate || null,
-      });
-
-      toast.success("Task created");
-      fetchTasks();
-
-      setTitle("");
-      setDescription("");
-      setPriority("Medium");
-      setCategory("Work");
-      setDueDate("");
-    } catch {
+      await createTask(taskData);
+    } catch (error) {
       toast.error("Couldn't create task");
+      throw error;
     }
+    toast.success("Card forged");
+    fetchTasks();
   };
 
   const handleDeleteTask = async (id) => {
@@ -161,11 +153,15 @@ const Tasks = () => {
   };
 
   const handleCompleteTask = async (task) => {
+    const completing = task.status !== "Completed";
     try {
       await updateTaskStatus(task.id, {
         ...task,
-        status: task.status === "Completed" ? "In Progress" : "Completed",
+        status: completing ? "Completed" : "In Progress",
       });
+      if (completing && task.recurrence && task.recurrence !== "None") {
+        toast.success(`Done. The next ${task.recurrence.toLowerCase()} one is queued up`);
+      }
       fetchTasks();
     } catch {
       toast.error("Couldn't update task");
@@ -202,81 +198,7 @@ const Tasks = () => {
           Tasks
         </motion.h1>
 
-        <motion.form
-          onSubmit={handleCreateTask}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.05 }}
-          className="relative overflow-hidden bg-line/[0.03] backdrop-blur-lg border border-line/10 p-6 rounded-3xl mb-8"
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-            className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-gradient-to-br from-cyan-500/10 to-fuchsia-500/10 blur-2xl pointer-events-none"
-          />
-
-          <h2 className="text-xl font-bold mb-6 relative">Create Task</h2>
-
-          <div className="flex flex-col gap-5 relative">
-            <div className="relative">
-              <FiType className="absolute left-3.5 top-3.5 text-subtle" size={16} />
-              <input
-                type="text"
-                placeholder="What needs to get done?"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className={`${inputClass} w-full pl-10`}
-                required
-              />
-            </div>
-
-            <div className="relative">
-              <FiAlignLeft className="absolute left-3.5 top-3.5 text-subtle" size={16} />
-              <textarea
-                placeholder="Add a description (optional)"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className={`${inputClass} w-full pl-10`}
-                rows={2}
-              />
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2.5">Priority</p>
-              <PillSelector layoutId="create-priority" options={PRIORITY_OPTIONS} value={priority} onChange={setPriority} />
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2.5">Category</p>
-              <PillSelector layoutId="create-category" options={CATEGORY_OPTIONS} value={category} onChange={setCategory} />
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
-              <div className="flex-1">
-                <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2.5">Due date</p>
-                <div className="relative">
-                  <FiCalendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-subtle" size={16} />
-                  <input
-                    type="date"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                    className={`${inputClass} w-full pl-10`}
-                  />
-                </div>
-              </div>
-
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                type="submit"
-                data-cursor-hover
-                className="bg-cyan-500 hover:bg-cyan-400 transition-colors px-8 py-3 rounded-xl font-bold text-black whitespace-nowrap"
-              >
-                Create Task
-              </motion.button>
-            </div>
-          </div>
-        </motion.form>
+        <TaskForge onCreate={handleCreateTask} />
 
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -297,7 +219,7 @@ const Tasks = () => {
             />
           </div>
 
-          <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
               <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2.5">Status</p>
               <PillSelector layoutId="filter-status" options={STATUS_FILTER_OPTIONS} value={statusFilter} onChange={setStatusFilter} />
@@ -310,148 +232,37 @@ const Tasks = () => {
               <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2.5">Category</p>
               <PillSelector layoutId="filter-category" options={CATEGORY_FILTER_OPTIONS} value={categoryFilter} onChange={setCategoryFilter} />
             </div>
+            <div>
+              <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2.5">Mood</p>
+              <PillSelector layoutId="filter-mood" options={MOOD_FILTER_OPTIONS} value={moodFilter} onChange={setMoodFilter} />
+            </div>
           </div>
         </motion.div>
 
         <div>
           <h2 className="text-xl font-bold mb-6">
-            {tasks.length === filteredTasks.length ? "All Tasks" : "Tasks"}{" "}
+            {tasks.length === filteredTasks.length ? "Your Collection" : "Tasks"}{" "}
             {!loading && <span className="text-subtle font-normal">({filteredTasks.length})</span>}
           </h2>
 
           {!loading && filteredTasks.length === 0 && (
             <div className="bg-line/[0.03] border border-line/10 rounded-3xl p-10 text-center text-subtle">
-              No tasks match your filters.
+              {tasks.length === 0 ? "No cards yet. Forge your first task above." : "No tasks match your filters."}
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <AnimatePresence mode="popLayout">
-              {filteredTasks.map((task) => {
-                const subtaskTotal = task.subtask_count || 0;
-                const subtaskDone = task.subtask_completed_count || 0;
-                const subtaskPercent =
-                  subtaskTotal === 0 ? 0 : Math.round((subtaskDone / subtaskTotal) * 100);
-
-                return (
-                  <motion.div
-                    key={task.id}
-                    layout
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.25 }}
-                    onClick={() => setSelectedTask(task)}
-                    data-cursor-hover
-                    className="cursor-pointer bg-line/[0.03] backdrop-blur-lg border border-line/10 p-6 rounded-3xl hover:border-line/20 hover:-translate-y-1 transition-all duration-300"
-                  >
-                    <div className="mb-4">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-xl font-semibold">{task.title}</h3>
-                        {task.is_owner === false ? (
-                          <span
-                            title={`Shared by ${task.owner_name}`}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/30"
-                          >
-                            <FiUsers size={10} /> {task.owner_name}
-                          </span>
-                        ) : (
-                          task.collaborator_count > 0 && (
-                            <span
-                              title="Shared with others"
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-line/5 text-muted border border-line/10"
-                            >
-                              <FiUsers size={10} /> {task.collaborator_count}
-                            </span>
-                          )
-                        )}
-                      </div>
-                      {task.description && (
-                        <p className="text-subtle mt-1.5 text-sm line-clamp-2">
-                          {task.description}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                          task.status === "Completed"
-                            ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                            : "bg-indigo-500/15 text-indigo-300 border-indigo-500/30"
-                        }`}
-                      >
-                        {task.status}
-                      </span>
-
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${priorityStyle(task.priority)}`}>
-                        {task.priority}
-                      </span>
-
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${categoryStyle(task.category)}`}>
-                        {task.category || "Other"}
-                      </span>
-
-                      {task.due_date && (
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                            isOverdue(task)
-                              ? "bg-red-500/15 text-red-300 border-red-500/30"
-                              : "bg-line/5 text-muted border-line/10"
-                          }`}
-                        >
-                          {isOverdue(task) ? "Overdue · " : "Due "}
-                          {task.due_date.slice(0, 10)}
-                        </span>
-                      )}
-                    </div>
-
-                    {subtaskTotal > 0 && (
-                      <div className="mb-5">
-                        <div className="flex items-center justify-between text-xs text-subtle mb-1.5">
-                          <span>Subtasks</span>
-                          <span>
-                            {subtaskDone}/{subtaskTotal}
-                          </span>
-                        </div>
-                        <div className="h-1.5 w-full rounded-full bg-line/5 overflow-hidden">
-                          <motion.div
-                            className="h-full rounded-full"
-                            style={{
-                              background:
-                                subtaskPercent === 100
-                                  ? "linear-gradient(90deg, #34d399, #22d3ee)"
-                                  : "linear-gradient(90deg, #22d3ee, #818cf8)",
-                            }}
-                            initial={{ width: 0 }}
-                            animate={{ width: `${subtaskPercent}%` }}
-                            transition={{ duration: 0.5, ease: "easeOut" }}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => handleCompleteTask(task)}
-                        data-cursor-hover
-                        className="flex-1 bg-line/5 hover:bg-line/10 border border-line/10 transition-colors py-2 rounded-xl font-medium text-sm"
-                      >
-                        {task.status === "Completed" ? "Mark In Progress" : "Mark Completed"}
-                      </button>
-                      {task.is_owner !== false && (
-                        <button
-                          onClick={() => handleDeleteTask(task.id)}
-                          data-cursor-hover
-                          className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 transition-colors px-4 py-2 rounded-xl font-medium text-sm"
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </div>
-                  </motion.div>
-                );
-              })}
+              {filteredTasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  overdue={isOverdue(task)}
+                  onOpen={setSelectedTask}
+                  onToggleComplete={handleCompleteTask}
+                  onDelete={handleDeleteTask}
+                />
+              ))}
             </AnimatePresence>
           </div>
         </div>

@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS tasks (
     status VARCHAR(50) DEFAULT 'In Progress',
     priority VARCHAR(50) DEFAULT 'Medium',
     category VARCHAR(50) DEFAULT 'Other',
+    mood VARCHAR(20) DEFAULT 'Chill',
+    recurrence VARCHAR(20) DEFAULT 'None',
     due_date DATE,
     user_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

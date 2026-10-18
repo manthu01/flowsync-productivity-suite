@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { FiUsers } from "react-icons/fi";
-import { CATEGORIES } from "../utils/categoryColors";
+import { CATEGORIES, MOODS, RECURRENCES, recurrenceLabel } from "../utils/categoryColors";
 import SubtaskList from "./SubtaskList";
 import TaskCollaborators from "./TaskCollaborators";
 import {
@@ -179,6 +179,34 @@ const TaskModal = ({ task, onClose, onSave, onDelete, onSubtasksChanged }) => {
                   >
                     {CATEGORIES.map((c) => (
                       <option key={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-subtle">Mood</label>
+                  <select
+                    className={fieldClass}
+                    value={form.mood || "Chill"}
+                    onChange={(e) => update("mood", e.target.value)}
+                  >
+                    {MOODS.map((m) => (
+                      <option key={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-subtle">Repeat</label>
+                  <select
+                    className={fieldClass}
+                    value={form.recurrence || "None"}
+                    onChange={(e) => update("recurrence", e.target.value)}
+                  >
+                    {RECURRENCES.map((r) => (
+                      <option key={r} value={r}>
+                        {recurrenceLabel(r)}
+                      </option>
                     ))}
                   </select>
                 </div>

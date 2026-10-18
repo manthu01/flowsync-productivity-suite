@@ -16,6 +16,8 @@ const createTask = (req, res) => {
         status,
         priority,
         category,
+        mood,
+        recurrence,
         due_date
     } = req.body;
 
@@ -23,13 +25,13 @@ const createTask = (req, res) => {
 
     const insertQuery = `
         INSERT INTO tasks
-        (title, description, status, priority, category, due_date, user_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        (title, description, status, priority, category, mood, recurrence, due_date, user_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     db.query(
         insertQuery,
-        [title, description, status, priority, category || "Other", normalizedDueDate, req.userId],
+        [title, description, status, priority, category || "Other", mood, recurrence, normalizedDueDate, req.userId],
         (err, result) => {
             if (err) {
                 logger.error({ err }, "Task creation failed");
@@ -80,6 +82,39 @@ const getTasks = (req, res) => {
     });
 };
 
+// Completing a repeating task queues up its next occurrence: a fresh In Progress copy
+// (same owner, collaborators and subtask checklist, all unticked) due one interval
+// later — counted from the old due date, or from today if that's already passed.
+// The completed task then drops its recurrence so it stays put as history and
+// re-completing it later can't spawn a second copy.
+const spawnNextOccurrence = async (taskId) => {
+    const created = await query(
+        `INSERT INTO tasks (title, description, status, priority, category, mood, recurrence, due_date, user_id)
+         SELECT title, description, 'In Progress', priority, category, mood, recurrence,
+                (GREATEST(COALESCE(due_date, CURRENT_DATE), CURRENT_DATE) + CASE recurrence
+                    WHEN 'Daily' THEN INTERVAL '1 day'
+                    WHEN 'Weekly' THEN INTERVAL '7 days'
+                    ELSE INTERVAL '1 month'
+                END)::date,
+                user_id
+         FROM tasks WHERE id = ? RETURNING id`,
+        [taskId]
+    );
+    const nextId = created.insertId;
+
+    await query(
+        `INSERT INTO subtasks (task_id, title, is_completed, position)
+         SELECT ?::int, title, FALSE, position FROM subtasks WHERE task_id = ?`,
+        [nextId, taskId]
+    );
+    await query(
+        `INSERT INTO task_collaborators (task_id, user_id)
+         SELECT ?::int, user_id FROM task_collaborators WHERE task_id = ?`,
+        [nextId, taskId]
+    );
+    await query("UPDATE tasks SET recurrence = 'None' WHERE id = ?", [taskId]);
+};
+
 // Owner and collaborators can both edit a shared task's details — same "shared doc"
 // model as the rest of the app's collaboration story. Only the owner can delete it
 // or manage who has access (see deleteTask/shareTask/unshareTask below).
@@ -92,25 +127,43 @@ const updateTask = async (req, res) => {
         status,
         priority,
         category,
+        mood,
+        recurrence,
         due_date
     } = req.body;
 
     const normalizedDueDate = due_date ? due_date.slice(0, 10) : due_date;
 
+    const accessClause =
+        "id=? AND (user_id=? OR id IN (SELECT task_id FROM task_collaborators WHERE user_id=?))";
+
     const updateQuery = `
         UPDATE tasks
-        SET title=?, description=?, status=?, priority=?, category=?, due_date=?
-        WHERE id=? AND (user_id=? OR id IN (SELECT task_id FROM task_collaborators WHERE user_id=?))
+        SET title=?, description=?, status=?, priority=?, category=?, mood=?, recurrence=?, due_date=?
+        WHERE ${accessClause}
     `;
 
     try {
+        const existing = await query(`SELECT status FROM tasks WHERE ${accessClause}`, [
+            id, req.userId, req.userId,
+        ]);
+
+        if (existing.length === 0) {
+            return res.status(404).json({ message: "Task not found" });
+        }
+
         const result = await query(updateQuery, [
-            title, description, status, priority, category || "Other", normalizedDueDate,
+            title, description, status, priority, category || "Other", mood, recurrence, normalizedDueDate,
             id, req.userId, req.userId,
         ]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: "Task not found" });
+        }
+
+        const justCompleted = existing[0].status !== "Completed" && status === "Completed";
+        if (justCompleted && recurrence !== "None") {
+            await spawnNextOccurrence(id);
         }
 
         const watchers = await getTaskWatchers(id);

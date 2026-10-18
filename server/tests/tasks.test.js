@@ -91,6 +91,7 @@ describe("GET /api/tasks", () => {
 describe("PUT /api/tasks/:id", () => {
     it("updates a task the caller owns or collaborates on", async () => {
         queueDbResults(
+            { result: [{ status: "In Progress" }] }, // existing status
             { result: { affectedRows: 1 } }, // UPDATE
             { result: [{ user_id: 1 }, { user_id: 2 }] } // watchers
         );
@@ -102,8 +103,59 @@ describe("PUT /api/tasks/:id", () => {
         expect(res.status).toBe(200);
     });
 
+    it("spawns the next occurrence when a repeating task is completed", async () => {
+        queueDbResults(
+            { result: [{ status: "In Progress" }] }, // existing status
+            { result: { affectedRows: 1 } }, // UPDATE
+            { result: { affectedRows: 1, insertId: 7 } }, // INSERT next occurrence
+            { result: { affectedRows: 2 } }, // copy subtasks
+            { result: { affectedRows: 1 } }, // copy collaborators
+            { result: { affectedRows: 1 } }, // clear recurrence on the completed task
+            { result: [{ user_id: 1 }] } // watchers
+        );
+
+        const res = await request(app)
+            .put("/api/tasks/1")
+            .set("Authorization", authHeader())
+            .send({ title: "Standup notes", status: "Completed", recurrence: "Weekly" });
+        expect(res.status).toBe(200);
+
+        const db = require("../config/db");
+        const insertCall = db.query.mock.calls.find(([sql]) => /INSERT INTO tasks/.test(sql));
+        expect(insertCall).toBeDefined();
+        expect(insertCall[1]).toEqual(["1"]);
+    });
+
+    it("doesn't spawn a copy when re-saving an already completed repeating task", async () => {
+        queueDbResults(
+            { result: [{ status: "Completed" }] }, // existing status
+            { result: { affectedRows: 1 } }, // UPDATE
+            { result: [{ user_id: 1 }] } // watchers
+        );
+
+        const res = await request(app)
+            .put("/api/tasks/1")
+            .set("Authorization", authHeader())
+            .send({ title: "Standup notes", status: "Completed", recurrence: "Weekly" });
+        expect(res.status).toBe(200);
+    });
+
+    it("rejects an invalid mood or recurrence", async () => {
+        const badMood = await request(app)
+            .post("/api/tasks")
+            .set("Authorization", authHeader())
+            .send({ title: "Task", mood: "Sleepy" });
+        expect(badMood.status).toBe(400);
+
+        const badRepeat = await request(app)
+            .post("/api/tasks")
+            .set("Authorization", authHeader())
+            .send({ title: "Task", recurrence: "Hourly" });
+        expect(badRepeat.status).toBe(400);
+    });
+
     it("returns 404 when the caller has no access to the task", async () => {
-        queueDbResults({ result: { affectedRows: 0 } });
+        queueDbResults({ result: [] });
 
         const res = await request(app)
             .put("/api/tasks/999")
