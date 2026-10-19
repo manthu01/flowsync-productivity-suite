@@ -40,7 +40,7 @@ const Signup = () => {
   };
 
   return (
-    <AuthLayout eyebrow="Get started" title="Create your account" subtitle="Free — no card required">
+    <AuthLayout eyebrow="Get started" title="Create your account" subtitle="Takes under a minute. Your first card is on us.">
       {error && (
         <motion.p
           initial={{ opacity: 0, height: 0 }}

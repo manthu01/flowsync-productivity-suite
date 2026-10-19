@@ -64,7 +64,7 @@ const Contact = () => {
               animate={{ opacity: 1, scale: 1 }}
               className="text-center py-8"
             >
-              <p className="text-xl font-semibold mb-2">Thanks for reaching out 🎉</p>
+              <p className="text-xl font-semibold mb-2">Thanks for reaching out</p>
               <p className="text-subtle text-sm mb-6">We'll get back to you soon.</p>
               <button
                 type="button"

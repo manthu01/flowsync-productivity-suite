@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { FiUsers } from "react-icons/fi";
@@ -92,7 +93,9 @@ const TaskModal = ({ task, onClose, onSave, onDelete, onSubtasksChanged }) => {
     }
   };
 
-  return (
+  // Portaled to <body>: the page wrapper is animated with a transform, which would
+  // otherwise make this "fixed" overlay position against the page, not the viewport.
+  return createPortal(
     <AnimatePresence>
       {task && (
         <motion.div
@@ -271,7 +274,8 @@ const TaskModal = ({ task, onClose, onSave, onDelete, onSubtasksChanged }) => {
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
 

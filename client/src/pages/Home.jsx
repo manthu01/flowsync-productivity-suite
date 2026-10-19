@@ -1,30 +1,41 @@
-import { useRef } from "react";
 import { Link } from "react-router-dom";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { FaListCheck, FaChartPie, FaTags, FaBell, FaCircleCheck } from "react-icons/fa6";
+import { motion, useMotionValue, useTransform } from "framer-motion";
+import { FaListCheck, FaChartPie, FaLayerGroup, FaRotate, FaUserGroup, FaCalendarDay } from "react-icons/fa6";
+import { FiUsers } from "react-icons/fi";
 import AmbientBackground from "../components/AmbientBackground";
+import HoloCard from "../components/HoloCard";
 import { getToken } from "../services/authService";
 
 const FEATURES = [
   {
-    icon: <FaListCheck size={22} className="text-cyan-300" />,
+    icon: <FaLayerGroup size={22} className="text-amber-300" />,
+    title: "Tasks as collectible cards",
+    desc: "Forge every task into a card. Priority sets its rarity, category its frame, mood its art: high-priority work literally shines.",
+  },
+  {
+    icon: <FaRotate size={22} className="text-cyan-300" />,
+    title: "Repeat without retyping",
+    desc: "Mark a task daily, weekly or monthly. Complete it and the next one is dealt automatically, subtasks and all.",
+  },
+  {
+    icon: <FaUserGroup size={22} className="text-fuchsia-300" />,
+    title: "Share with friends, live",
+    desc: "Add friends, share a task, and watch edits and ticked-off subtasks appear on their screen the moment they happen.",
+  },
+  {
+    icon: <FaListCheck size={22} className="text-emerald-300" />,
     title: "Subtasks & progress",
-    desc: "Break any task into smaller steps and watch an animated progress bar fill in as you check them off.",
+    desc: "Break any task into smaller steps and watch its progress bar fill in as you check them off.",
+  },
+  {
+    icon: <FaCalendarDay size={22} className="text-red-300" />,
+    title: "Due dates that count down",
+    desc: "Set a deadline in two clicks with the T-minus dial, and overdue cards flag themselves before you forget.",
   },
   {
     icon: <FaChartPie size={22} className="text-indigo-300" />,
-    title: "Real analytics",
-    desc: "A live breakdown of your workload by status and priority, so you know where your time is actually going.",
-  },
-  {
-    icon: <FaTags size={22} className="text-fuchsia-300" />,
-    title: "Categories & due dates",
-    desc: "Tag tasks by category, set due dates, and get flagged automatically when something's overdue.",
-  },
-  {
-    icon: <FaBell size={22} className="text-amber-300" />,
-    title: "Built for real use",
-    desc: "Friends, a personal dashboard, and a profile that's actually yours — not just another to-do list.",
+    title: "A dashboard that tells the truth",
+    desc: "Status, priority and mood breakdowns plus what's due this week, so you know where your time is actually going.",
   },
 ];
 
@@ -41,109 +52,112 @@ const wordVariants = {
   }),
 };
 
-// A stylized, purely decorative preview of the task UI — floats and tilts toward the
-// cursor for a bit of "product shot" depth on the hero.
-const PreviewCard = () => {
-  const ref = useRef(null);
-  const rotateX = useMotionValue(0);
-  const rotateY = useMotionValue(0);
-  const springX = useSpring(rotateX, { stiffness: 150, damping: 18 });
-  const springY = useSpring(rotateY, { stiffness: 150, damping: 18 });
+// The hero's "product shot": a fanned hand of the same holo cards the Tasks page
+// deals, so the homepage shows the real look. Purely decorative sample data.
+const HAND = [
+  {
+    key: "left",
+    fan: { rotate: -14, x: -170, y: 34 },
+    card: {
+      title: "Morning run, 5k",
+      description: "Rain or shine. Mostly shine.",
+      priority: "Low",
+      category: "Personal",
+      mood: "Chill",
+      recurrence: "Daily",
+      footer: ["Expires tomorrow", "#0007"],
+    },
+  },
+  {
+    key: "right",
+    fan: { rotate: 14, x: 170, y: 34 },
+    card: {
+      title: "Rebrand moodboard",
+      description: "Steal like an artist, credit like a professional.",
+      priority: "Medium",
+      category: "Other",
+      mood: "Creative",
+      shared: 2,
+      footer: ["Expires Fri", "#0031"],
+    },
+  },
+  {
+    key: "center",
+    fan: { rotate: 0, x: 0, y: 0 },
+    card: {
+      title: "Ship analytics v2",
+      description: "The charts are drawn. Now make them true.",
+      priority: "High",
+      category: "Work",
+      mood: "Grind",
+      progress: [3, 5],
+      footer: ["T-02 days", "#0042"],
+    },
+  },
+];
 
-  const handleMove = (e) => {
-    const rect = ref.current.getBoundingClientRect();
-    const px = (e.clientX - rect.left) / rect.width - 0.5;
-    const py = (e.clientY - rect.top) / rect.height - 0.5;
-    rotateY.set(px * 14);
-    rotateX.set(-py * 14);
-  };
-
-  const handleLeave = () => {
-    rotateX.set(0);
-    rotateY.set(0);
-  };
-
-  const rows = [
-    { title: "Redesign landing page", tag: "Work", tagColor: "bg-blue-500/15 text-blue-300 border-blue-500/30", pct: 80 },
-    { title: "Ship analytics v2", tag: "Urgent", tagColor: "bg-red-500/15 text-red-300 border-red-500/30", pct: 45 },
-    { title: "Plan Q3 roadmap", tag: "Personal", tagColor: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30", pct: 100 },
-  ];
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 60, scale: 0.9 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.8, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      style={{ perspective: 1200 }}
-      className="relative mx-auto mt-16 max-w-xl"
-    >
-      <motion.div
-        ref={ref}
-        onMouseMove={handleMove}
-        onMouseLeave={handleLeave}
-        style={{ rotateX: springX, rotateY: springY, transformStyle: "preserve-3d" }}
-        className="relative bg-line/[0.04] backdrop-blur-2xl border border-line/10 rounded-3xl p-6 shadow-[0_30px_80px_rgba(0,0,0,0.45)]"
-      >
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-400/70" />
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400/70" />
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/70" />
-          </div>
-          <span className="text-subtle text-xs font-medium">Today's tasks</span>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          {rows.map((row, i) => (
-            <motion.div
-              key={row.title}
-              initial={{ opacity: 0, x: -16 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.9 + i * 0.12 }}
-              className="bg-line/[0.03] border border-line/10 rounded-2xl p-4"
-            >
-              <div className="flex items-center justify-between mb-2.5">
-                <span className="text-sm font-medium flex items-center gap-2">
-                  {row.pct === 100 && <FaCircleCheck className="text-emerald-400" size={13} />}
-                  {row.title}
-                </span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${row.tagColor}`}>
-                  {row.tag}
-                </span>
+const HeroHand = () => (
+  <motion.div
+    initial={{ opacity: 0, y: 60 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.8, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+    className="relative mx-auto mt-16 h-[330px] sm:h-[440px] max-w-3xl"
+    aria-hidden="true"
+  >
+    <div className="absolute left-1/2 top-0 origin-top scale-[0.62] sm:scale-100">
+      {HAND.map(({ key, fan, card }, i) => (
+        <motion.div
+          key={key}
+          initial={{ opacity: 0, rotate: 0, x: -135, y: 40 }}
+          animate={{ opacity: 1, rotate: fan.rotate, x: fan.x - 135, y: fan.y }}
+          whileHover={{ y: fan.y - 28, zIndex: 5 }}
+          transition={{ type: "spring", damping: 18, stiffness: 140, delay: 0.7 + i * 0.12 }}
+          className="absolute top-0 left-0 w-[270px] origin-bottom"
+          style={{ zIndex: key === "center" ? 3 : 1 }}
+        >
+          <HoloCard
+            title={card.title}
+            description={card.description}
+            priority={card.priority}
+            category={card.category}
+            mood={card.mood}
+            recurrence={card.recurrence}
+            footer={
+              <>
+                <span>{card.footer[0]}</span>
+                <span>{card.footer[1]}</span>
+              </>
+            }
+          >
+            {card.shared && (
+              <span className="holo-chip">
+                <FiUsers size={10} /> Shared with {card.shared}
+              </span>
+            )}
+            {card.progress && (
+              <div className="holo-progress">
+                <div className="holo-progress-label">
+                  <span>Subtasks</span>
+                  <span>
+                    {card.progress[0]}/{card.progress[1]}
+                  </span>
+                </div>
+                <div className="holo-progress-track">
+                  <motion.div
+                    className="holo-progress-bar"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(card.progress[0] / card.progress[1]) * 100}%` }}
+                    transition={{ duration: 0.8, delay: 1.4, ease: "easeOut" }}
+                  />
+                </div>
               </div>
-              <div className="h-1.5 rounded-full bg-line/10 overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${row.pct}%` }}
-                  transition={{ duration: 0.8, delay: 1.2 + i * 0.12, ease: "easeOut" }}
-                  className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-fuchsia-400"
-                />
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Floating accent chips for depth */}
-      <motion.div
-        animate={{ y: [0, -14, 0] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute -top-6 -right-6 bg-line/[0.06] backdrop-blur-xl border border-line/10 rounded-2xl px-4 py-2.5 shadow-xl hidden sm:flex items-center gap-2"
-      >
-        <FaChartPie className="text-fuchsia-300" size={14} />
-        <span className="text-xs font-semibold">73% complete</span>
-      </motion.div>
-      <motion.div
-        animate={{ y: [0, 12, 0] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-        className="absolute -bottom-5 -left-6 bg-line/[0.06] backdrop-blur-xl border border-line/10 rounded-2xl px-4 py-2.5 shadow-xl hidden sm:flex items-center gap-2"
-      >
-        <FaListCheck className="text-cyan-300" size={14} />
-        <span className="text-xs font-semibold">3 subtasks left</span>
-      </motion.div>
-    </motion.div>
-  );
-};
+            )}
+          </HoloCard>
+        </motion.div>
+      ))}
+    </div>
+  </motion.div>
+);
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 24 },
@@ -226,8 +240,8 @@ const Home = () => {
           transition={{ duration: 0.5, delay: 0.55 }}
           className="text-muted text-lg mt-6 max-w-xl mx-auto"
         >
-          FlowSync is a focused workspace for tracking tasks, breaking them into subtasks,
-          and seeing your progress in real time.
+          Forge your to-dos into collectible cards, share them with friends in real time,
+          and watch your progress fill in as you actually get things done.
         </motion.p>
 
         <motion.div
@@ -256,7 +270,7 @@ const Home = () => {
           </Link>
         </motion.div>
 
-        <PreviewCard />
+        <HeroHand />
       </section>
 
       <section className="relative z-10 max-w-5xl mx-auto px-6 md:px-8 pb-16">
@@ -264,7 +278,7 @@ const Home = () => {
           Everything you need, nothing you don't
         </motion.p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {FEATURES.map((f, i) => (
             <motion.div
               key={f.title}

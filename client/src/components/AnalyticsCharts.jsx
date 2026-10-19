@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { PRIORITY_CHART_COLORS, STATUS_CHART_COLORS } from "../utils/categoryColors";
+import { MOODS, MOOD_META, PRIORITY_CHART_COLORS, STATUS_CHART_COLORS } from "../utils/categoryColors";
 
 // CSS custom properties resolve fine inside inline style/SVG attribute values, so
 // these stay theme-aware without needing to read the theme in JS.
@@ -37,6 +37,11 @@ const AnalyticsCharts = ({ tasks }) => {
     count: tasks.filter((t) => t.priority === p).length,
   }));
 
+  const moodData = MOODS.map((m) => ({
+    name: m,
+    count: tasks.filter((t) => (t.mood || "Chill") === m).length,
+  }));
+
   if (tasks.length === 0) {
     return (
       <div className="bg-line/[0.03] backdrop-blur-lg border border-line/10 p-8 rounded-3xl text-center text-subtle">
@@ -50,7 +55,7 @@ const AnalyticsCharts = ({ tasks }) => {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="grid grid-cols-1 md:grid-cols-2 gap-6"
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
     >
       <div className="bg-line/[0.03] backdrop-blur-lg border border-line/10 p-6 rounded-3xl">
         <h3 className="text-sm font-semibold text-muted mb-4 tracking-wide uppercase">
@@ -119,6 +124,38 @@ const AnalyticsCharts = ({ tasks }) => {
               <Bar dataKey="count" radius={[8, 8, 0, 0]}>
                 {priorityData.map((entry) => (
                   <Cell key={entry.name} fill={PRIORITY_CHART_COLORS[entry.name]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <div className="bg-line/[0.03] backdrop-blur-lg border border-line/10 p-6 rounded-3xl">
+        <h3 className="text-sm font-semibold text-muted mb-4 tracking-wide uppercase">
+          Mood Breakdown
+        </h3>
+        <div className="h-[200px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={moodData}>
+              <XAxis
+                dataKey="name"
+                stroke={axisStroke}
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                allowDecimals={false}
+                stroke={axisStroke}
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                width={24}
+              />
+              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgb(var(--color-line) / 0.04)" }} />
+              <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                {moodData.map((entry) => (
+                  <Cell key={entry.name} fill={MOOD_META[entry.name].hex} />
                 ))}
               </Bar>
             </BarChart>

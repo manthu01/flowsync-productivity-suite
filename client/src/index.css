@@ -227,6 +227,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .holo-rep { flex: none; padding: 3px 6px; border-radius: 6px; border: 1px solid #22d3ee; background: rgba(0, 0, 0, 0.5); color: #22d3ee; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
 .holo-art { position: relative; display: grid; place-items: center; height: 150px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1); background-color: #0a0a0e; }
 .holo-grid .holo-art { height: 120px; }
+.holo-mini .holo-art { height: 88px; }
+.holo-mini .holo-art b { font-size: 44px; }
+.holo-mini .holo-flav { min-height: 0; }
 .holo-art::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 50% 60%, color-mix(in srgb, var(--tc) 45%, transparent), transparent 65%); }
 .holo-art[data-mood="Grind"] { background-image: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--mc) 22%, transparent) 0 7px, transparent 7px 16px); }
 .holo-art[data-mood="Chill"] { background-image: repeating-radial-gradient(circle at 50% 130%, color-mix(in srgb, var(--mc) 30%, transparent) 0 2px, transparent 2px 13px); }

@@ -1,11 +1,11 @@
 import { motion } from "framer-motion";
-import { FaListCheck, FaChartPie, FaUserGroup } from "react-icons/fa6";
+import { FaLayerGroup, FaRotate, FaUserGroup } from "react-icons/fa6";
 import AmbientBackground from "./AmbientBackground";
 
 const HIGHLIGHTS = [
-  { icon: <FaListCheck size={18} />, text: "Subtasks, categories, and due dates that keep you honest" },
-  { icon: <FaChartPie size={18} />, text: "Real analytics on where your time actually goes" },
-  { icon: <FaUserGroup size={18} />, text: "Add colleagues and stay in sync as a team" },
+  { icon: <FaLayerGroup size={18} />, text: "Forge tasks into cards with priority, mood, subtasks and due dates" },
+  { icon: <FaRotate size={18} />, text: "Repeating tasks that deal themselves again when you finish" },
+  { icon: <FaUserGroup size={18} />, text: "Add friends and share tasks that sync live" },
 ];
 
 // Shared split-screen shell for Login/Signup: a branded showcase panel on desktop,
@@ -43,7 +43,7 @@ const AuthLayout = ({ eyebrow, title, subtitle, children }) => {
             transition={{ duration: 0.5, delay: 0.15 }}
             className="text-subtle max-w-sm mb-10"
           >
-            A focused workspace for tasks, progress, and the people you work with.
+            A focused workspace for your tasks, your progress, and your friends.
           </motion.p>
 
           <div className="flex flex-col gap-4">

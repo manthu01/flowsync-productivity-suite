@@ -4,15 +4,15 @@ import AmbientBackground from "../components/AmbientBackground";
 const VALUES = [
   {
     title: "Built for follow-through",
-    desc: "Most task apps are great at collecting to-dos and bad at helping you finish them. FlowSync leans into progress — subtasks, completion percentages, and a dashboard that shows what's actually moving.",
+    desc: "Most task apps are great at collecting to-dos and bad at helping you finish them. FlowSync leans into progress: subtasks with live progress bars, repeating tasks that come back on their own, and a dashboard that shows what's actually moving.",
   },
   {
-    title: "No noise, no bloat",
-    desc: "No workspaces-within-workspaces, no forty settings panels. Categories, priorities, due dates, and subtasks — the things that matter when you're actually working.",
+    title: "Fun to use, on purpose",
+    desc: "Every task is a collectible card. Priority sets its rarity, category its frame, mood its art, and a legendary card actually shines. If your list looks good, you'll open it more often.",
   },
   {
     title: "Your data, secured properly",
-    desc: "Passwords are hashed with bcrypt and never stored in plain text — not even we can see them. Every task is scoped strictly to its owner.",
+    desc: "Passwords are hashed with bcrypt and never stored in plain text, so not even we can see them. Tasks are private to you unless you share them with a friend, and only the owner can delete a shared task.",
   },
 ];
 
@@ -38,8 +38,9 @@ const About = () => (
       >
         FlowSync is a full-stack task management platform built to make personal productivity
         feel less like admin work and more like actual progress. It started as a simple
-        CRUD to-do list and grew into a real workspace — authentication, analytics,
-        categorization, and now subtasks with live progress tracking.
+        CRUD to-do list and grew into a real workspace: authentication, analytics,
+        categories and subtasks, then friends and live task sharing, and now collectible
+        task cards with moods and repeating tasks.
       </motion.p>
 
       <div className="flex flex-col gap-8">

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { FiSearch } from "react-icons/fi";
@@ -60,6 +60,7 @@ const MOOD_FILTER_OPTIONS = [{ value: "All", label: "All", activeClass: "bg-line
 
 const Tasks = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -79,6 +80,16 @@ const Tasks = () => {
       if (silent && selectedTask) {
         const refreshed = data.find((t) => t.id === selectedTask.id);
         if (refreshed) setSelectedTask(refreshed);
+      }
+
+      // Deep link from the dashboard (/tasks?task=ID): open that task once, then
+      // drop the param so closing the modal doesn't reopen it on the next refetch.
+      const linkedId = Number(searchParams.get("task"));
+      if (!silent && linkedId) {
+        const linked = data.find((t) => t.id === linkedId);
+        if (linked) setSelectedTask(linked);
+        else toast.error("That task no longer exists");
+        setSearchParams({}, { replace: true });
       }
     } catch (error) {
       if (error.response?.status === 401) {

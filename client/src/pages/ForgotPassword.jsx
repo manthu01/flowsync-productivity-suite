@@ -26,7 +26,7 @@ const ForgotPassword = () => {
 
   if (sent) {
     return (
-      <AuthLayout eyebrow="Password reset" title="Check your inbox 📬">
+      <AuthLayout eyebrow="Password reset" title="Check your inbox">
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}

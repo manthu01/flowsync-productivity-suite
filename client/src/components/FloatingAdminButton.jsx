@@ -38,7 +38,7 @@ const FloatingAdminButton = () => {
             exit={{ opacity: 0, x: 8 }}
             className="absolute right-full top-1/2 -translate-y-1/2 mr-3 whitespace-nowrap bg-panel border border-line/10 text-fg text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg"
           >
-            You have the keys 👑
+            You have the keys
           </motion.span>
         )}
       </AnimatePresence>
