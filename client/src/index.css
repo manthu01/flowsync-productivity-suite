@@ -106,8 +106,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   animation: glow-drift 18s ease-in-out infinite;
 }
 
-/* Custom cursor replaces the native one on devices with a precise pointer (mouse/trackpad) */
-@media (pointer: fine) {
+/* Custom cursor replaces the native one on devices with a precise pointer (mouse/trackpad),
+   unless the user asked for reduced motion; then they keep their normal cursor.
+   Keep this query in sync with CURSOR_QUERY in CustomCursor.jsx. */
+@media (pointer: fine) and (prefers-reduced-motion: no-preference) {
   * {
     cursor: none !important;
   }
@@ -281,7 +283,43 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .holo-done .holo-foil { opacity: 0; }
 .holo-stamp { position: absolute; top: 34%; left: 50%; z-index: 1; padding: 4px 12px; border: 2px solid #34d399; border-radius: 6px; color: #34d399; background: rgba(0, 0, 0, 0.55); font-size: 13px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; transform: translate(-50%, -50%) rotate(-12deg); pointer-events: none; }
 
+/* Due within a day: an amber pulse around the frame (overdue cards already read red).
+   Animated as a drop-shadow filter so it doesn't clobber the rarity box-shadow. */
+.holo-due-soon { animation: holo-due-pulse 2.4s ease-in-out infinite; }
+.holo-due-soon .holo-foot > span:first-child { color: #fbbf24; }
+@keyframes holo-due-pulse {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(251, 191, 36, 0)); }
+  50% { filter: drop-shadow(0 0 14px rgba(251, 191, 36, 0.65)); }
+}
+
+/* Sample cards in an empty collection: clearly examples, not real tasks. */
+.holo-sample { opacity: 0.55; filter: saturate(0.7); }
+.holo-sample-tag {
+  position: absolute; top: 34%; left: 50%; z-index: 1; padding: 4px 12px; border: 2px dashed #a1a1aa; border-radius: 6px;
+  color: #e4e4e7; background: rgba(0, 0, 0, 0.6); font-family: 'JetBrains Mono', ui-monospace, monospace !important;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; transform: translate(-50%, -50%) rotate(-8deg); pointer-events: none;
+}
+
+/* ---------- Loading skeletons ---------- */
+.skeleton {
+  border-radius: 12px;
+  background:
+    linear-gradient(100deg, transparent 30%, rgb(var(--color-line) / 0.07) 50%, transparent 70%) 0 0 / 200% 100%,
+    rgb(var(--color-line) / 0.05);
+  animation: skeleton-sweep 1.4s linear infinite;
+}
+.skeleton-card { width: 100%; max-width: 300px; height: 360px; border-radius: 18px; }
+.skeleton-card.mini { height: 290px; }
+@keyframes skeleton-sweep { from { background-position: 100% 0, 0 0; } to { background-position: -100% 0, 0 0; } }
+
+kbd.key {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px;
+  border-radius: 5px; border: 1px solid rgb(var(--color-line) / 0.15); background: rgb(var(--color-line) / 0.05);
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; color: rgb(var(--color-muted));
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hud-armed::before, .hud-title.hud-err { animation: none; }
   .holo, .hud-needle { transition: none; }
+  .holo-due-soon, .skeleton { animation: none; }
 }

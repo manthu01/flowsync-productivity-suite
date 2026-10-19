@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
@@ -16,10 +16,11 @@ import AmbientBackground from "../components/AmbientBackground";
 import TaskModal from "../components/TaskModal";
 import TaskForge from "../components/TaskForge";
 import TaskCard from "../components/TaskCard";
+import HoloCard from "../components/HoloCard";
 import PillSelector from "../components/PillSelector";
 import TaskFilterMenu from "../components/TaskFilterMenu";
 import { CATEGORIES, MOODS } from "../utils/categoryColors";
-import { todayStr } from "../utils/dates";
+import { dayStrFromToday, todayStr } from "../utils/dates";
 
 const inputClass =
   "p-3 rounded-xl bg-line/[0.04] border border-line/10 outline-none focus:border-cyan-400/50 transition-colors";
@@ -65,6 +66,28 @@ const FILTER_GROUPS = [
   { key: "mood", label: "Mood", options: [ALL_OPTION, ...MOOD_OPTIONS] },
 ];
 const NO_FILTERS = { priority: "All", category: "All", mood: "All" };
+
+// Shown (dimmed, stamped "Sample") in an empty collection so a new user sees what
+// a forged card looks like before making their own.
+const SAMPLE_CARDS = [
+  {
+    title: "Finish the quarterly report",
+    description: "Future me will be grateful.",
+    priority: "High",
+    category: "Work",
+    mood: "Grind",
+    footer: "Expires Fri",
+  },
+  {
+    title: "Water the plants",
+    description: "They can't text you when they're thirsty.",
+    priority: "Low",
+    category: "Personal",
+    mood: "Chill",
+    recurrence: "Weekly",
+    footer: "Expires tomorrow",
+  },
+];
 // What an unset field counts as when filtering (older rows may lack these).
 const NO_FILTERS_FALLBACK = { priority: "Medium", category: "Other", mood: "Chill" };
 
@@ -80,6 +103,14 @@ const Tasks = () => {
   const [filters, setFilters] = useState(NO_FILTERS);
 
   const [selectedTask, setSelectedTask] = useState(null);
+
+  const forgeTitleRef = useRef(null);
+  const searchRef = useRef(null);
+
+  const focusForge = () => {
+    forgeTitleRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    forgeTitleRef.current?.focus({ preventScroll: true });
+  };
 
   const fetchTasks = async (silent = false) => {
     try {
@@ -129,6 +160,39 @@ const Tasks = () => {
     return () => socket.off("tasks:changed", handleTasksChanged);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // /tasks?forge=1 (from the dashboard's welcome panel) jumps straight to the forge.
+  useEffect(() => {
+    if (!searchParams.get("forge")) return;
+    focusForge();
+    setSearchParams(
+      (prev) => {
+        prev.delete("forge");
+        return prev;
+      },
+      { replace: true }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Cockpit shortcuts: N = new card (focus the forge), / = search. Ignored while
+  // typing in a field, with a modifier held, or while a task is open.
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || selectedTask) return;
+      if (e.target.closest?.("input, textarea, select, [contenteditable='true']")) return;
+
+      if (e.key === "n" || e.key === "N") {
+        e.preventDefault();
+        focusForge();
+      } else if (e.key === "/") {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [selectedTask]);
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
@@ -213,18 +277,24 @@ const Tasks = () => {
 
   const filtersActive = searchTerm || Object.values(filters).some((v) => v !== "All");
   const emptyMessage =
-    tasks.length === 0
-      ? "No cards yet. Forge your first task above."
-      : filtersActive
-        ? "No cards match your search or filters."
-        : statusFilter === "In Progress"
-          ? `All caught up. ${completedCount} completed ${completedCount === 1 ? "card is" : "cards are"} in the Completed tab.`
-          : "No completed cards yet.";
+    filtersActive
+      ? "No cards match your search or filters."
+      : statusFilter === "In Progress"
+        ? `All caught up. ${completedCount} completed ${completedCount === 1 ? "card is" : "cards are"} in the Completed tab.`
+        : "No completed cards yet.";
 
   const isOverdue = (task) =>
     task.due_date &&
     task.status !== "Completed" &&
     task.due_date.slice(0, 10) < todayStr();
+
+  const dueSoon = (task) => {
+    if (!task.due_date || task.status === "Completed") return null;
+    const due = task.due_date.slice(0, 10);
+    if (due === todayStr()) return "today";
+    if (due === dayStrFromToday(1)) return "tomorrow";
+    return null;
+  };
 
   return (
     <div className="min-h-screen text-fg p-6 md:p-8 relative">
@@ -240,13 +310,18 @@ const Tasks = () => {
           Tasks
         </motion.h1>
 
-        <TaskForge onCreate={handleCreateTask} />
+        <TaskForge onCreate={handleCreateTask} titleRef={forgeTitleRef} />
 
         <div className="flex items-baseline justify-between gap-4 mb-4">
           <h2 className="text-xl font-bold">
             Your Collection{" "}
             {!loading && <span className="text-subtle font-normal">({filteredTasks.length})</span>}
           </h2>
+          <p className="hidden md:flex items-center gap-1.5 text-xs text-subtle">
+            <kbd className="key">N</kbd> new card
+            <span className="mx-1.5 opacity-40">·</span>
+            <kbd className="key">/</kbd> search
+          </p>
         </div>
 
         <motion.div
@@ -258,6 +333,7 @@ const Tasks = () => {
           <div className="relative flex-1 min-w-[200px]">
             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-subtle" size={16} />
             <input
+              ref={searchRef}
               type="text"
               placeholder="Search your collection..."
               value={searchTerm}
@@ -275,9 +351,47 @@ const Tasks = () => {
         </motion.div>
 
         <div>
-          {!loading && filteredTasks.length === 0 && (
+          {!loading && tasks.length === 0 && (
+            <div className="bg-line/[0.03] border border-line/10 rounded-3xl p-8 md:p-10 text-center">
+              <p className="text-lg font-semibold">Your collection is empty</p>
+              <p className="text-subtle text-sm mt-1 mb-8">
+                Here's what forged cards look like. Name a task in the forge above (or press{" "}
+                <kbd className="key">N</kbd>) to make your first one.
+              </p>
+              <div className="flex flex-wrap justify-center gap-6" aria-hidden="true">
+                {SAMPLE_CARDS.map((card) => (
+                  <div key={card.title} className="w-[260px]">
+                    <HoloCard
+                      className="holo-grid holo-sample"
+                      title={card.title}
+                      description={card.description}
+                      priority={card.priority}
+                      category={card.category}
+                      mood={card.mood}
+                      recurrence={card.recurrence}
+                      footer={<span>{card.footer}</span>}
+                    >
+                      <span className="holo-sample-tag">Sample</span>
+                    </HoloCard>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!loading && tasks.length > 0 && filteredTasks.length === 0 && (
             <div className="bg-line/[0.03] border border-line/10 rounded-3xl p-10 text-center text-subtle">
               {emptyMessage}
+            </div>
+          )}
+
+          {loading && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" aria-busy="true">
+              {Array.from({ length: 4 }, (_, i) => (
+                <div key={i} className="flex justify-center">
+                  <div className="skeleton skeleton-card" />
+                </div>
+              ))}
             </div>
           )}
 
@@ -288,6 +402,7 @@ const Tasks = () => {
                   key={task.id}
                   task={task}
                   overdue={isOverdue(task)}
+                  dueSoon={dueSoon(task)}
                   onOpen={setSelectedTask}
                   onToggleComplete={handleCompleteTask}
                   onDelete={handleDeleteTask}

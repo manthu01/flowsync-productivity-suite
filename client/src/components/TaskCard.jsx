@@ -7,15 +7,18 @@ const formatDue = (str) =>
 
 // One task in the grid, shown as its holo card plus the live bits a card in your
 // collection needs: share badge, subtask progress, and complete/delete actions.
-const TaskCard = ({ task, overdue, onOpen, onToggleComplete, onDelete }) => {
+// `dueSoon` is "today" or "tomorrow" for an open task due within a day, else null.
+const TaskCard = ({ task, overdue, dueSoon, onOpen, onToggleComplete, onDelete }) => {
   const done = task.status === "Completed";
   const subtaskTotal = task.subtask_count || 0;
   const subtaskDone = task.subtask_completed_count || 0;
   const subtaskPercent = subtaskTotal === 0 ? 0 : Math.round((subtaskDone / subtaskTotal) * 100);
 
-  const dueLabel = task.due_date
-    ? `${overdue ? "Overdue · " : "Expires "}${formatDue(task.due_date)}`
-    : "Never expires";
+  const dueLabel = !task.due_date
+    ? "Never expires"
+    : dueSoon
+      ? `Due ${dueSoon}`
+      : `${overdue ? "Overdue · " : "Expires "}${formatDue(task.due_date)}`;
 
   return (
     <motion.div
@@ -29,7 +32,7 @@ const TaskCard = ({ task, overdue, onOpen, onToggleComplete, onDelete }) => {
       className="cursor-pointer flex justify-center"
     >
       <HoloCard
-        className={`holo-grid ${done ? "holo-done" : ""}`}
+        className={`holo-grid ${done ? "holo-done" : ""} ${dueSoon ? "holo-due-soon" : ""}`}
         title={task.title}
         description={task.description}
         priority={task.priority}

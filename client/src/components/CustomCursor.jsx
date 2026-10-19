@@ -11,6 +11,10 @@ import {
 const INTERACTIVE_SELECTOR =
   "a, button, input, select, textarea, [role='button'], [data-cursor-hover], .cursor-hover";
 
+// Same query as the `cursor: none` rule in index.css: only take over the cursor for a
+// precise pointer, and leave the native one alone under prefers-reduced-motion.
+const CURSOR_QUERY = "(pointer: fine) and (prefers-reduced-motion: no-preference)";
+
 const IDLE_SIZE = 26;
 const LOCK_PADDING = 6;
 const SPRING = { damping: 30, stiffness: 400, mass: 0.5 };
@@ -23,7 +27,7 @@ const CORNERS = [
 ];
 
 const CustomCursor = () => {
-  const [enabled] = useState(() => window.matchMedia("(pointer: fine)").matches);
+  const [enabled] = useState(() => window.matchMedia(CURSOR_QUERY).matches);
   const reduceMotion = useReducedMotion();
   const [locked, setLocked] = useState(false);
   const [pressed, setPressed] = useState(false);

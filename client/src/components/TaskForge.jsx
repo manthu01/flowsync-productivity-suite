@@ -81,7 +81,9 @@ const Toggles = ({ options, value, onChange, meta, label }) => (
 // Cockpit-style task composer. The controls on the left drive a live holo-card
 // preview on the right; holding the forge button (or pressing Enter in the title)
 // creates the task. `onCreate` should throw on failure so the form is kept.
-const TaskForge = ({ onCreate }) => {
+// `titleRef` is optional: pass one to focus the card-name field from outside
+// (the Tasks page's "N" shortcut and the dashboard's "forge your first card" link).
+const TaskForge = ({ onCreate, titleRef: externalTitleRef }) => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
 
@@ -91,7 +93,8 @@ const TaskForge = ({ onCreate }) => {
 
   const dialRef = useRef(null);
   const fillRef = useRef(null);
-  const titleRef = useRef(null);
+  const ownTitleRef = useRef(null);
+  const titleRef = externalTitleRef ?? ownTitleRef;
   const dateRef = useRef(null);
   const holdRaf = useRef(0);
 
