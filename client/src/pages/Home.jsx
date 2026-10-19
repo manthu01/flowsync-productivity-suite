@@ -218,7 +218,7 @@ const Home = () => {
               </motion.span>
             ))}
           </span>
-          <span className="block overflow-hidden bg-gradient-to-r from-cyan-300 via-indigo-300 to-fuchsia-300 bg-clip-text text-transparent">
+          <span className="block overflow-hidden text-gradient-brand bg-clip-text text-transparent">
             {HEADLINE_BOTTOM.map((word, i) => (
               <motion.span
                 key={word}

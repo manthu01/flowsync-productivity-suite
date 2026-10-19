@@ -212,6 +212,21 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .hud-hold:disabled { opacity: 0.6; }
 .hud-hold-fill { position: absolute; inset: 0; transform: scaleX(0); transform-origin: left; background: repeating-linear-gradient(-45deg, rgb(var(--forge) / 0.45) 0 10px, rgb(var(--forge) / 0.22) 10px 20px); }
 
+/* ---------- Brand gradient text + light-theme accent contrast ---------- */
+.text-gradient-brand { background-image: linear-gradient(to right, #67e8f9, #a5b4fc, #f0abfc); }
+:root[data-theme="light"] .text-gradient-brand { background-image: linear-gradient(to right, #0891b2, #4f46e5, #c026d3); }
+
+/* Accent text is written with -300/-400 shades tuned for the dark glass; on white
+   they wash out, so the light theme deepens them to ~700. One place instead of a
+   light variant on every call site. (Holo cards stay dark, so they're excluded.) */
+:root[data-theme="light"] :is(.text-cyan-300, .text-cyan-400, .text-cyan-400\/70):not(.holo *) { color: #0e7490; }
+:root[data-theme="light"] :is(.text-indigo-300, .text-indigo-300\/70, .text-indigo-400\/70):not(.holo *) { color: #4338ca; }
+:root[data-theme="light"] :is(.text-fuchsia-300, .text-fuchsia-400, .text-fuchsia-400\/70):not(.holo *) { color: #a21caf; }
+:root[data-theme="light"] :is(.text-emerald-300, .text-emerald-400, .text-emerald-400\/70):not(.holo *) { color: #047857; }
+:root[data-theme="light"] :is(.text-amber-300, .text-amber-400, .text-amber-400\/70):not(.holo *) { color: #b45309; }
+:root[data-theme="light"] :is(.text-red-300, .text-red-400, .text-red-400\/70):not(.holo *) { color: #b91c1c; }
+:root[data-theme="light"] .border-fuchsia-400 { border-color: #c026d3; }
+
 /* ---------- Holo task cards ---------- */
 /* Cards are physical objects, so they stay dark in both themes. */
 .holo {

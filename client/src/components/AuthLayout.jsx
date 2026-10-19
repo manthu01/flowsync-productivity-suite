@@ -33,7 +33,7 @@ const AuthLayout = ({ eyebrow, title, subtitle, children }) => {
           >
             Plan your work.
             <br />
-            <span className="bg-gradient-to-r from-cyan-300 via-indigo-300 to-fuchsia-300 bg-clip-text text-transparent">
+            <span className="text-gradient-brand bg-clip-text text-transparent">
               Actually finish it.
             </span>
           </motion.h1>
