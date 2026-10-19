@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { FiMail } from "react-icons/fi";
@@ -10,6 +10,7 @@ import { useTheme } from "../context/ThemeContext";
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setThemeFromServer } = useTheme();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -27,7 +28,9 @@ const Login = () => {
       localStorage.setItem("flowsync_user", JSON.stringify(data.user));
       setThemeFromServer(data.user.theme);
       toast.success(`Welcome back, ${data.user.name.split(" ")[0]}`);
-      navigate("/dashboard");
+      // Back to the protected page that bounced them here, if any.
+      const from = location.state?.from;
+      navigate(from ? `${from.pathname}${from.search || ""}${from.hash || ""}` : "/dashboard", { replace: true });
     } catch (err) {
       const message = err.response?.data?.message || "Login failed";
       setError(message);

@@ -9,8 +9,7 @@ import { logout, getStoredUser } from "../services/authService";
 import AmbientBackground from "../components/AmbientBackground";
 import AnalyticsCharts from "../components/AnalyticsCharts";
 import { categoryStyle, priorityStyle } from "../utils/categoryColors";
-
-const todayStr = () => new Date().toISOString().slice(0, 10);
+import { todayStr } from "../utils/dates";
 
 const StatCard = ({ label, value, icon, delay }) => (
   <motion.div

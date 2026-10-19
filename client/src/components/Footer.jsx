@@ -1,4 +1,18 @@
 import { Link } from "react-router-dom";
+import { getToken } from "../services/authService";
+
+const linkClass = "text-subtle hover:text-fg transition-colors";
+
+const ACCOUNT_LINKS = {
+  guest: [
+    { to: "/login", label: "Log In" },
+    { to: "/signup", label: "Sign Up" },
+  ],
+  authed: [
+    { to: "/profile", label: "Profile" },
+    { to: "/friends", label: "Friends" },
+  ],
+};
 
 const Footer = () => (
   <footer className="relative z-10 border-t border-line/10 mt-20">
@@ -56,16 +70,13 @@ const Footer = () => (
           Account
         </h4>
         <ul className="flex flex-col gap-2 text-sm">
-          <li>
-            <Link to="/login" data-cursor-hover className="text-subtle hover:text-fg transition-colors">
-              Log In
-            </Link>
-          </li>
-          <li>
-            <Link to="/signup" data-cursor-hover className="text-subtle hover:text-fg transition-colors">
-              Sign Up
-            </Link>
-          </li>
+          {ACCOUNT_LINKS[getToken() ? "authed" : "guest"].map((link) => (
+            <li key={link.to}>
+              <Link to={link.to} data-cursor-hover className={linkClass}>
+                {link.label}
+              </Link>
+            </li>
+          ))}
         </ul>
       </div>
     </div>

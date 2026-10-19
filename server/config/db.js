@@ -1,5 +1,10 @@
-const { Pool } = require("pg");
+const { Pool, types } = require("pg");
 const logger = require("../utils/logger");
+
+// Keep DATE columns (OID 1082) as plain "YYYY-MM-DD" strings. pg's default turns
+// them into a Date at local midnight on the server, which JSON then serialises as
+// UTC — on a server east of UTC that shifts every due date back a day.
+types.setTypeParser(1082, (value) => value);
 
 // Neon (and most managed Postgres) requires TLS but hands out a cert chain that
 // node's default trust store doesn't always resolve cleanly through — same

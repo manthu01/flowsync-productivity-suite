@@ -24,9 +24,35 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import NotFound from "./pages/NotFound";
+
+const PAGE_TITLES = {
+  "/": "FlowSync: plan it, forge it, finish it",
+  "/about": "About",
+  "/contact": "Contact",
+  "/tasks": "Tasks",
+  "/dashboard": "Dashboard",
+  "/profile": "Profile",
+  "/friends": "Friends",
+  "/admin": "Admin",
+  "/login": "Log in",
+  "/signup": "Sign up",
+  "/forgot-password": "Forgot password",
+  "/reset-password": "Reset password",
+};
+
+const pageTitle = (pathname) => {
+  if (pathname === "/") return PAGE_TITLES["/"];
+  const name = PAGE_TITLES[pathname.replace(/\/+$/, "")] || "Not found";
+  return `${name} · FlowSync`;
+};
 
 const AnimatedRoutes = () => {
   const location = useLocation();
+
+  useEffect(() => {
+    document.title = pageTitle(location.pathname);
+  }, [location.pathname]);
 
   return (
     <AnimatePresence mode="wait">
@@ -104,6 +130,14 @@ const AnimatedRoutes = () => {
                   <AdminDashboard />
                 </PageTransition>
               </AdminRoute>
+            }
+          />
+          <Route
+            path="*"
+            element={
+              <PageTransition>
+                <NotFound />
+              </PageTransition>
             }
           />
         </Route>

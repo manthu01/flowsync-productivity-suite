@@ -10,6 +10,7 @@ import {
   RECURRENCES,
   recurrenceLabel,
 } from "../utils/categoryColors";
+import { toDateStr } from "../utils/dates";
 
 const PRIORITIES = ["Low", "Medium", "High"];
 const HOLD_MS = 800;
@@ -25,8 +26,6 @@ const EMPTY_FORM = {
 };
 
 // Dates here are plain local YYYY-MM-DD strings, same shape the API stores.
-const toDateStr = (d) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 const startOfToday = () => {
   const d = new Date();

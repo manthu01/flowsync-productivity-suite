@@ -18,6 +18,7 @@ import TaskForge from "../components/TaskForge";
 import TaskCard from "../components/TaskCard";
 import PillSelector from "../components/PillSelector";
 import { CATEGORIES, MOODS } from "../utils/categoryColors";
+import { todayStr } from "../utils/dates";
 
 const inputClass =
   "p-3 rounded-xl bg-line/[0.04] border border-line/10 outline-none focus:border-cyan-400/50 transition-colors";
@@ -56,8 +57,6 @@ const STATUS_FILTER_OPTIONS = [
 const PRIORITY_FILTER_OPTIONS = [{ value: "All", label: "All", activeClass: "bg-line/40" }, ...PRIORITY_OPTIONS];
 const CATEGORY_FILTER_OPTIONS = [{ value: "All", label: "All", activeClass: "bg-line/40" }, ...CATEGORY_OPTIONS];
 const MOOD_FILTER_OPTIONS = [{ value: "All", label: "All", activeClass: "bg-line/40" }, ...MOOD_OPTIONS];
-
-const todayStr = () => new Date().toISOString().slice(0, 10);
 
 const Tasks = () => {
   const navigate = useNavigate();

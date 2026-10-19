@@ -1,11 +1,13 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { getToken } from "../services/authService";
 
 const ProtectedRoute = ({ children }) => {
   const token = getToken();
+  const location = useLocation();
 
   if (!token) {
-    return <Navigate to="/login" replace />;
+    // Remember where they were headed so Login can send them back there.
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   return children;
