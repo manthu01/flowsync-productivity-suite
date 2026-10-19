@@ -17,6 +17,7 @@ import TaskModal from "../components/TaskModal";
 import TaskForge from "../components/TaskForge";
 import TaskCard from "../components/TaskCard";
 import PillSelector from "../components/PillSelector";
+import TaskFilterMenu from "../components/TaskFilterMenu";
 import { CATEGORIES, MOODS } from "../utils/categoryColors";
 import { todayStr } from "../utils/dates";
 
@@ -49,14 +50,23 @@ const MOOD_ACTIVE_CLASS = {
 };
 const MOOD_OPTIONS = MOODS.map((m) => ({ value: m, label: m, activeClass: MOOD_ACTIVE_CLASS[m] }));
 
-const STATUS_FILTER_OPTIONS = [
-  { value: "All", label: "All", activeClass: "bg-line/40" },
-  { value: "In Progress", label: "In Progress", activeClass: "bg-indigo-500" },
+// Completed cards (including every finished round of a repeating task) are kept
+// out of the way by default: the collection opens on the "Active" tab.
+const STATUS_TABS = [
+  { value: "In Progress", label: "Active", activeClass: "bg-cyan-400" },
   { value: "Completed", label: "Completed", activeClass: "bg-emerald-500" },
+  { value: "All", label: "All", activeClass: "bg-line/40" },
 ];
-const PRIORITY_FILTER_OPTIONS = [{ value: "All", label: "All", activeClass: "bg-line/40" }, ...PRIORITY_OPTIONS];
-const CATEGORY_FILTER_OPTIONS = [{ value: "All", label: "All", activeClass: "bg-line/40" }, ...CATEGORY_OPTIONS];
-const MOOD_FILTER_OPTIONS = [{ value: "All", label: "All", activeClass: "bg-line/40" }, ...MOOD_OPTIONS];
+
+const ALL_OPTION = { value: "All", label: "All", activeClass: "bg-line/40" };
+const FILTER_GROUPS = [
+  { key: "priority", label: "Priority", options: [ALL_OPTION, ...PRIORITY_OPTIONS] },
+  { key: "category", label: "Category", options: [ALL_OPTION, ...CATEGORY_OPTIONS] },
+  { key: "mood", label: "Mood", options: [ALL_OPTION, ...MOOD_OPTIONS] },
+];
+const NO_FILTERS = { priority: "All", category: "All", mood: "All" };
+// What an unset field counts as when filtering (older rows may lack these).
+const NO_FILTERS_FALLBACK = { priority: "Medium", category: "Other", mood: "Chill" };
 
 const Tasks = () => {
   const navigate = useNavigate();
@@ -66,10 +76,8 @@ const Tasks = () => {
   const [loading, setLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [priorityFilter, setPriorityFilter] = useState("All");
-  const [categoryFilter, setCategoryFilter] = useState("All");
-  const [moodFilter, setMoodFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("In Progress");
+  const [filters, setFilters] = useState(NO_FILTERS);
 
   const [selectedTask, setSelectedTask] = useState(null);
 
@@ -129,15 +137,29 @@ const Tasks = () => {
         .includes(searchTerm.toLowerCase());
       const matchesStatus =
         statusFilter === "All" ? true : task.status === statusFilter;
-      const matchesPriority =
-        priorityFilter === "All" ? true : task.priority === priorityFilter;
-      const matchesCategory =
-        categoryFilter === "All" ? true : task.category === categoryFilter;
-      const matchesMood = moodFilter === "All" ? true : task.mood === moodFilter;
+      const matchesFilters = FILTER_GROUPS.every(
+        ({ key }) => filters[key] === "All" || (task[key] || NO_FILTERS_FALLBACK[key]) === filters[key]
+      );
 
-      return matchesSearch && matchesStatus && matchesPriority && matchesCategory && matchesMood;
+      return matchesSearch && matchesStatus && matchesFilters;
     });
-  }, [tasks, searchTerm, statusFilter, priorityFilter, categoryFilter, moodFilter]);
+  }, [tasks, searchTerm, statusFilter, filters]);
+
+  const completedCount = tasks.filter((t) => t.status === "Completed").length;
+  const statusCounts = {
+    "In Progress": tasks.length - completedCount,
+    Completed: completedCount,
+    All: tasks.length,
+  };
+  const statusTabs = STATUS_TABS.map((tab) => ({
+    ...tab,
+    label: (
+      <>
+        {tab.label}
+        {!loading && <span className="ml-1.5 opacity-60 tabular-nums">{statusCounts[tab.value]}</span>}
+      </>
+    ),
+  }));
 
   // Rethrows on failure so the forge keeps what was typed.
   const handleCreateTask = async (taskData) => {
@@ -189,6 +211,16 @@ const Tasks = () => {
     }
   };
 
+  const filtersActive = searchTerm || Object.values(filters).some((v) => v !== "All");
+  const emptyMessage =
+    tasks.length === 0
+      ? "No cards yet. Forge your first task above."
+      : filtersActive
+        ? "No cards match your search or filters."
+        : statusFilter === "In Progress"
+          ? `All caught up. ${completedCount} completed ${completedCount === 1 ? "card is" : "cards are"} in the Completed tab.`
+          : "No completed cards yet.";
+
   const isOverdue = (task) =>
     task.due_date &&
     task.status !== "Completed" &&
@@ -210,54 +242,42 @@ const Tasks = () => {
 
         <TaskForge onCreate={handleCreateTask} />
 
+        <div className="flex items-baseline justify-between gap-4 mb-4">
+          <h2 className="text-xl font-bold">
+            Your Collection{" "}
+            {!loading && <span className="text-subtle font-normal">({filteredTasks.length})</span>}
+          </h2>
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
-          className="bg-line/[0.03] backdrop-blur-lg border border-line/10 p-6 rounded-3xl mb-8"
+          className="sticky top-[4.5rem] z-20 mb-8 flex flex-wrap items-center gap-3 p-3 rounded-2xl bg-panel/80 backdrop-blur-xl border border-line/10 shadow-lg"
         >
-          <h2 className="text-xl font-bold mb-6">Search & Filters</h2>
-
-          <div className="relative mb-5">
+          <div className="relative flex-1 min-w-[200px]">
             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-subtle" size={16} />
             <input
               type="text"
-              placeholder="Search tasks..."
+              placeholder="Search your collection..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`${inputClass} w-full pl-10`}
+              className={`${inputClass} w-full pl-10 !py-2`}
             />
           </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2.5">Status</p>
-              <PillSelector layoutId="filter-status" options={STATUS_FILTER_OPTIONS} value={statusFilter} onChange={setStatusFilter} />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2.5">Priority</p>
-              <PillSelector layoutId="filter-priority" options={PRIORITY_FILTER_OPTIONS} value={priorityFilter} onChange={setPriorityFilter} />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2.5">Category</p>
-              <PillSelector layoutId="filter-category" options={CATEGORY_FILTER_OPTIONS} value={categoryFilter} onChange={setCategoryFilter} />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2.5">Mood</p>
-              <PillSelector layoutId="filter-mood" options={MOOD_FILTER_OPTIONS} value={moodFilter} onChange={setMoodFilter} />
-            </div>
-          </div>
+          <PillSelector layoutId="filter-status" options={statusTabs} value={statusFilter} onChange={setStatusFilter} />
+          <TaskFilterMenu
+            groups={FILTER_GROUPS}
+            values={filters}
+            onChange={(key, value) => setFilters((f) => ({ ...f, [key]: value }))}
+            onClear={() => setFilters(NO_FILTERS)}
+          />
         </motion.div>
 
         <div>
-          <h2 className="text-xl font-bold mb-6">
-            {tasks.length === filteredTasks.length ? "Your Collection" : "Tasks"}{" "}
-            {!loading && <span className="text-subtle font-normal">({filteredTasks.length})</span>}
-          </h2>
-
           {!loading && filteredTasks.length === 0 && (
             <div className="bg-line/[0.03] border border-line/10 rounded-3xl p-10 text-center text-subtle">
-              {tasks.length === 0 ? "No cards yet. Forge your first task above." : "No tasks match your filters."}
+              {emptyMessage}
             </div>
           )}
 
