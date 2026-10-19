@@ -1,7 +1,8 @@
 const { z } = require("zod");
+const { newPassword } = require("./authSchemas");
 
 const setPasswordSchema = z.object({
-    password: z.string().min(6, "Password must be at least 6 characters"),
+    password: newPassword,
 });
 
 module.exports = { setPasswordSchema };

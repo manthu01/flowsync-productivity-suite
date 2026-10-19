@@ -2,6 +2,7 @@ const express = require("express");
 const requireAuth = require("../middleware/authMiddleware");
 const requireAdmin = require("../middleware/requireAdmin");
 const validate = require("../middleware/validate");
+const { numericIdParam } = require("../middleware/idParams");
 const { setPasswordSchema } = require("../validation/adminSchemas");
 const {
     getStats,
@@ -12,6 +13,8 @@ const {
 } = require("../controllers/adminController");
 
 const router = express.Router();
+
+router.param("id", numericIdParam);
 
 router.get("/stats", requireAuth, requireAdmin, getStats);
 router.get("/users", requireAuth, requireAdmin, getUsers);

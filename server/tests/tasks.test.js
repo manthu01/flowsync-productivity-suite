@@ -3,7 +3,7 @@ jest.mock("../config/db", () => ({ query: jest.fn() }));
 const request = require("supertest");
 const jwt = require("jsonwebtoken");
 const app = require("../app");
-const { queueDbResults } = require("./helpers/mockDb");
+const { queueDbResults, setSession, resetDb } = require("./helpers/mockDb");
 
 const authHeader = () => {
     const token = jwt.sign({ id: 1 }, process.env.JWT_SECRET, { expiresIn: "1d" });
@@ -12,6 +12,7 @@ const authHeader = () => {
 
 beforeEach(() => {
     jest.clearAllMocks();
+    resetDb();
 });
 
 describe("task routes require auth", () => {
@@ -22,6 +23,28 @@ describe("task routes require auth", () => {
 
     it("rejects an invalid token", async () => {
         const res = await request(app).get("/api/tasks").set("Authorization", "Bearer garbage");
+        expect(res.status).toBe(401);
+    });
+
+    it("rejects a token issued before a password reset (stale token_version)", async () => {
+        setSession({ token_version: 1 }); // token below carries tv 0
+
+        const res = await request(app).get("/api/tasks").set("Authorization", authHeader());
+        expect(res.status).toBe(401);
+    });
+
+    it("rejects a token for a deleted user", async () => {
+        setSession(null);
+
+        const res = await request(app).get("/api/tasks").set("Authorization", authHeader());
+        expect(res.status).toBe(401);
+    });
+
+    it("rejects a token signed with a different algorithm", async () => {
+        const b64 = (obj) => Buffer.from(JSON.stringify(obj)).toString("base64url");
+        const none = `${b64({ alg: "none", typ: "JWT" })}.${b64({ id: 1, tv: 0 })}.`;
+
+        const res = await request(app).get("/api/tasks").set("Authorization", `Bearer ${none}`);
         expect(res.status).toBe(401);
     });
 });
@@ -51,6 +74,16 @@ describe("POST /api/tasks", () => {
             .set("Authorization", authHeader())
             .send({ title: "Write tests" });
         expect(res.status).toBe(201);
+    });
+
+    it("refuses to create past the per-user task limit", async () => {
+        queueDbResults({ result: { affectedRows: 0 } }); // capped INSERT ... SELECT inserts nothing
+
+        const res = await request(app)
+            .post("/api/tasks")
+            .set("Authorization", authHeader())
+            .send({ title: "One too many" });
+        expect(res.status).toBe(429);
     });
 
     it("never leaks a raw db error to the client", async () => {
@@ -162,6 +195,47 @@ describe("PUT /api/tasks/:id", () => {
             .set("Authorization", authHeader())
             .send({ title: "Nope" });
         expect(res.status).toBe(404);
+    });
+});
+
+describe("id params", () => {
+    it("returns 404 for a non-numeric task id without touching the db", async () => {
+        const res = await request(app)
+            .put("/api/tasks/1%20OR%201=1")
+            .set("Authorization", authHeader())
+            .send({ title: "x" });
+        expect(res.status).toBe(404);
+    });
+});
+
+describe("subtasks", () => {
+    it("rejects a subtask with no title", async () => {
+        const res = await request(app)
+            .post("/api/tasks/1/subtasks")
+            .set("Authorization", authHeader())
+            .send({ title: "   " });
+        expect(res.status).toBe(400);
+    });
+
+    it("rejects a non-boolean is_completed", async () => {
+        const res = await request(app)
+            .put("/api/tasks/1/subtasks/2")
+            .set("Authorization", authHeader())
+            .send({ is_completed: "yes" });
+        expect(res.status).toBe(400);
+    });
+
+    it("refuses to add past the per-task subtask limit", async () => {
+        queueDbResults(
+            { result: [{ 1: 1 }] }, // hasTaskAccess
+            { result: [{ nextPosition: 100, count: "100" }] } // position + count
+        );
+
+        const res = await request(app)
+            .post("/api/tasks/1/subtasks")
+            .set("Authorization", authHeader())
+            .send({ title: "Step 101" });
+        expect(res.status).toBe(429);
     });
 });
 

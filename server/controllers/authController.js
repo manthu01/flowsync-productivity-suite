@@ -1,37 +1,40 @@
 const db = require("../config/db");
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const { generateToken } = require("../utils/tokens");
+const { generateToken, hashToken } = require("../utils/tokens");
+const { signSessionToken } = require("../utils/session");
 const { sendResetEmail } = require("../utils/email");
-const { isAdminEmail } = require("../utils/admin");
 const logger = require("../utils/logger");
 
-const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,20}$/;
 const RESET_TTL_MS = 60 * 60 * 1000; // 1h
 
 const genericAuthEmailResponse = {
     message: "If that email is registered, we've sent you an email with further instructions.",
 };
 
+// One message for "no such user" and "wrong password" so login can't be used to
+// find out which emails/usernames have accounts.
+const INVALID_LOGIN = { message: "Invalid email/username or password" };
+
+// Compared against when the user doesn't exist, so a miss takes as long as a real
+// bcrypt check and response timing doesn't give the answer away either.
+const DUMMY_HASH = bcrypt.hashSync("flowsync-timing-equalizer", 10);
+
+const publicUser = (user) => ({
+    id: user.id,
+    name: user.name,
+    username: user.username,
+    email: user.email,
+    avatar_url: user.avatar_url ?? null,
+    theme: user.theme ?? "dark",
+    is_admin: !!user.is_admin,
+});
+
 // No email verification step: accounts are active immediately on signup, and the
 // response logs the user straight in (same shape as login) so there's no extra
-// step between "create account" and "using the app".
+// step between "create account" and "using the app". Input is already validated
+// (and the email lowercased) by signupSchema.
 const signup = async (req, res) => {
     const { name, username, email, password } = req.body;
-
-    if (!name || !username || !email || !password) {
-        return res.status(400).json({ message: "All fields are required" });
-    }
-
-    if (!USERNAME_PATTERN.test(username)) {
-        return res.status(400).json({
-            message: "Username must be 3-20 characters and can only contain letters, numbers, and underscores",
-        });
-    }
-
-    if (password.length < 6) {
-        return res.status(400).json({ message: "Password must be at least 6 characters" });
-    }
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -51,20 +54,12 @@ const signup = async (req, res) => {
                 return res.status(500).json({ message: "Signup failed" });
             }
 
-            const token = jwt.sign({ id: result.insertId }, process.env.JWT_SECRET, { expiresIn: "1d" });
+            const user = { id: result.insertId, name, username, email, token_version: 0, is_admin: false };
 
             res.status(201).json({
                 message: "Account created",
-                token,
-                user: {
-                    id: result.insertId,
-                    name,
-                    username,
-                    email,
-                    avatar_url: null,
-                    theme: "dark",
-                    is_admin: isAdminEmail(email),
-                },
+                token: signSessionToken(user),
+                user: publicUser(user),
             });
         });
     } catch (error) {
@@ -75,31 +70,21 @@ const signup = async (req, res) => {
 const login = (req, res) => {
     const { identifier, password } = req.body;
 
-    if (!identifier || !password) {
-        return res.status(400).json({ message: "Email/username and password are required" });
-    }
-
+    // Emails are stored lowercase; usernames keep their case.
     const query = "SELECT * FROM users WHERE email = ? OR username = ?";
 
-    db.query(query, [identifier, identifier], async (err, result) => {
+    db.query(query, [identifier.toLowerCase(), identifier], async (err, result) => {
         if (err) {
             logger.error({ err }, "Login failed");
             return res.status(500).json({ message: "Login failed" });
         }
 
-        if (result.length === 0) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
         const user = result[0];
+        const validPassword = await bcrypt.compare(password, user ? user.password : DUMMY_HASH);
 
-        const validPassword = await bcrypt.compare(password, user.password);
-
-        if (!validPassword) {
-            return res.status(401).json({ message: "Invalid credentials" });
+        if (!user || !validPassword) {
+            return res.status(401).json(INVALID_LOGIN);
         }
-
-        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
 
         // Fire-and-forget: powers the admin dashboard's active-user counts, not worth
         // delaying the login response for.
@@ -107,26 +92,14 @@ const login = (req, res) => {
 
         res.status(200).json({
             message: "Login successful",
-            token,
-            user: {
-                id: user.id,
-                name: user.name,
-                username: user.username,
-                email: user.email,
-                avatar_url: user.avatar_url,
-                theme: user.theme,
-                is_admin: isAdminEmail(user.email),
-            },
+            token: signSessionToken(user),
+            user: publicUser(user),
         });
     });
 };
 
 const forgotPassword = (req, res) => {
     const { email } = req.body;
-
-    if (!email) {
-        return res.status(400).json({ message: "Email is required" });
-    }
 
     db.query("SELECT id FROM users WHERE email = ?", [email], async (err, result) => {
         if (err) {
@@ -139,7 +112,7 @@ const forgotPassword = (req, res) => {
 
             db.query(
                 "UPDATE users SET reset_token = ?, reset_expires = ? WHERE id = ?",
-                [resetToken, resetExpires, result[0].id],
+                [hashToken(resetToken), resetExpires, result[0].id],
                 async (updateErr) => {
                     if (!updateErr) {
                         try {
@@ -159,17 +132,9 @@ const forgotPassword = (req, res) => {
 const resetPassword = async (req, res) => {
     const { token, password } = req.body;
 
-    if (!token || !password) {
-        return res.status(400).json({ message: "Token and new password are required" });
-    }
-
-    if (password.length < 6) {
-        return res.status(400).json({ message: "Password must be at least 6 characters" });
-    }
-
     const query = "SELECT id FROM users WHERE reset_token = ? AND reset_expires > NOW()";
 
-    db.query(query, [token], async (err, result) => {
+    db.query(query, [hashToken(token)], async (err, result) => {
         if (err) {
             return res.status(500).json({ message: "Reset failed" });
         }
@@ -180,8 +145,12 @@ const resetPassword = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // Bumping token_version signs out every existing session, so whoever might
+        // have had access before the reset loses it.
         db.query(
-            "UPDATE users SET password = ?, reset_token = NULL, reset_expires = NULL WHERE id = ?",
+            `UPDATE users
+             SET password = ?, reset_token = NULL, reset_expires = NULL, token_version = token_version + 1
+             WHERE id = ?`,
             [hashedPassword, result[0].id],
             (updateErr) => {
                 if (updateErr) {

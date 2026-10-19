@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 const pinoHttp = require("pino-http");
 
 const { Sentry, enabled: sentryEnabled } = require("./utils/sentry");
@@ -14,6 +15,15 @@ const adminRoutes = require("./routes/adminRoutes");
 
 const app = express();
 
+// Render puts exactly one load balancer in front of the app. Trusting that single
+// hop makes req.ip the real client address (so per-IP rate limits apply per
+// visitor), without trusting X-Forwarded-For values a client could forge.
+app.set("trust proxy", 1);
+
+// Standard security headers (nosniff, frame denial, HSTS, ...) and no
+// X-Powered-By banner. This server only returns JSON, so the defaults fit as-is.
+app.use(helmet());
+
 const allowedOrigins = process.env.CLIENT_URL
     ? process.env.CLIENT_URL.split(",").map((url) => url.trim())
     : true;
@@ -21,7 +31,7 @@ const allowedOrigins = process.env.CLIENT_URL
 app.use(cors({
     origin: allowedOrigins,
 }));
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
 
 // One structured log line per request (method, path, status, duration, request id) —
 // silenced under the test runner via the logger's own level so test output stays clean.

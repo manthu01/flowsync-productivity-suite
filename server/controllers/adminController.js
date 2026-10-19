@@ -129,7 +129,11 @@ const setUserPassword = async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const result = await query("UPDATE users SET password = ? WHERE id = ?", [hashedPassword, id]);
+        // Bumping token_version signs the user out of every existing session.
+        const result = await query(
+            "UPDATE users SET password = ?, token_version = token_version + 1 WHERE id = ?",
+            [hashedPassword, id]
+        );
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: "User not found" });

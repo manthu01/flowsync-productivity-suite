@@ -2,6 +2,8 @@ const db = require("../config/db");
 const { hasTaskAccess, getTaskWatchers } = require("../utils/taskAccess");
 const { notifyTaskChanged } = require("../realtime");
 
+const MAX_SUBTASKS_PER_TASK = 100;
+
 const getSubtasks = async (req, res) => {
     const { taskId } = req.params;
 
@@ -35,10 +37,16 @@ const createSubtask = async (req, res) => {
         if (!allowed) return res.status(404).json({ message: "Task not found" });
 
         db.query(
-            'SELECT COALESCE(MAX(position), -1) + 1 AS "nextPosition" FROM subtasks WHERE task_id = ?',
+            'SELECT COALESCE(MAX(position), -1) + 1 AS "nextPosition", COUNT(*) AS "count" FROM subtasks WHERE task_id = ?',
             [taskId],
             (posErr, posResult) => {
                 if (posErr) return res.status(500).json({ message: "Couldn't create subtask" });
+
+                if (Number(posResult[0].count) >= MAX_SUBTASKS_PER_TASK) {
+                    return res.status(429).json({
+                        message: `A task can have at most ${MAX_SUBTASKS_PER_TASK} subtasks`,
+                    });
+                }
 
                 const position = posResult[0].nextPosition;
 

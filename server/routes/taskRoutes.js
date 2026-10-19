@@ -4,6 +4,8 @@ const router = express.Router();
 
 const requireAuth = require("../middleware/authMiddleware");
 const validate = require("../middleware/validate");
+const { writeLimiter } = require("../middleware/rateLimit");
+const { numericIdParam } = require("../middleware/idParams");
 const { taskSchema, shareTaskSchema } = require("../validation/taskSchemas");
 
 const {
@@ -19,6 +21,11 @@ const {
 const subtaskRoutes = require("./subtaskRoutes");
 
 router.use(requireAuth);
+router.use(writeLimiter);
+
+router.param("id", numericIdParam);
+router.param("userId", numericIdParam);
+router.param("taskId", numericIdParam);
 
 router.post("/", validate(taskSchema), createTask);
 

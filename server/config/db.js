@@ -6,13 +6,12 @@ const logger = require("../utils/logger");
 // UTC — on a server east of UTC that shifts every due date back a day.
 types.setTypeParser(1082, (value) => value);
 
-// Neon (and most managed Postgres) requires TLS but hands out a cert chain that
-// node's default trust store doesn't always resolve cleanly through — same
-// trade-off `rejectUnauthorized: false` makes for plenty of managed DBs. Connection
-// itself is still fully encrypted either way.
+// Neon requires TLS. Its certificate chains to a public CA in node's default trust
+// store, so verify it: an encrypted connection to an unverified server would still
+// let a man-in-the-middle read the traffic.
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+    ssl: process.env.DATABASE_URL ? { rejectUnauthorized: true } : false,
 });
 
 // Converts MySQL-style "?" positional placeholders to Postgres's "$1, $2, ..." so

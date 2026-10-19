@@ -93,11 +93,12 @@ const Signup = () => {
         </div>
 
         <PasswordInput
-          placeholder="Password"
+          placeholder="Password (8+ characters, a letter and a number)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          minLength={6}
+          minLength={8}
+          maxLength={72}
         />
 
         <motion.button

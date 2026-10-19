@@ -9,6 +9,9 @@ const query = (sql, params) =>
         db.query(sql, params, (err, result) => (err ? reject(err) : resolve(result)));
     });
 
+// Per-account ceiling so one account can't fill the (free-tier) database.
+const MAX_TASKS_PER_USER = 1000;
+
 const createTask = (req, res) => {
     const {
         title,
@@ -23,19 +26,30 @@ const createTask = (req, res) => {
 
     const normalizedDueDate = due_date ? due_date.slice(0, 10) : due_date;
 
+    // The cap is checked inside the INSERT itself, so concurrent requests can't race past it.
     const insertQuery = `
         INSERT INTO tasks
         (title, description, status, priority, category, mood, recurrence, due_date, user_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        SELECT ?, ?, ?, ?, ?, ?, ?, ?::date, ?::int
+        WHERE (SELECT COUNT(*) FROM tasks WHERE user_id = ?) < ?
     `;
 
     db.query(
         insertQuery,
-        [title, description, status, priority, category || "Other", mood, recurrence, normalizedDueDate, req.userId],
+        [
+            title, description, status, priority, category || "Other", mood, recurrence, normalizedDueDate, req.userId,
+            req.userId, MAX_TASKS_PER_USER,
+        ],
         (err, result) => {
             if (err) {
                 logger.error({ err }, "Task creation failed");
                 return res.status(500).json({ message: "Couldn't create task" });
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(429).json({
+                    message: `You've reached the limit of ${MAX_TASKS_PER_USER} tasks. Delete some old ones first.`,
+                });
             }
 
             notifyTaskChanged([req.userId]);

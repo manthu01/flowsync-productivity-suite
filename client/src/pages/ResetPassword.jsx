@@ -58,11 +58,12 @@ const ResetPassword = () => {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <PasswordInput
-          placeholder="New password"
+          placeholder="New password (8+ characters, a letter and a number)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          minLength={6}
+          minLength={8}
+          maxLength={72}
         />
 
         <PasswordInput
@@ -70,7 +71,8 @@ const ResetPassword = () => {
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           required
-          minLength={6}
+          minLength={8}
+          maxLength={72}
         />
 
         <motion.button

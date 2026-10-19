@@ -13,8 +13,13 @@ CREATE TABLE IF NOT EXISTS users (
     theme VARCHAR(10) NOT NULL DEFAULT 'dark' CHECK (theme IN ('light', 'dark')),
     username_changed_at TIMESTAMP,
     last_login_at TIMESTAMP,
+    is_admin BOOLEAN NOT NULL DEFAULT FALSE,
+    token_version INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_key ON users (LOWER(email));
+CREATE UNIQUE INDEX IF NOT EXISTS users_username_lower_key ON users (LOWER(username));
 
 CREATE TABLE IF NOT EXISTS tasks (
     id SERIAL PRIMARY KEY,

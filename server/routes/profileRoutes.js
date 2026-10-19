@@ -4,6 +4,9 @@ const multer = require("multer");
 const router = express.Router();
 
 const requireAuth = require("../middleware/authMiddleware");
+const validate = require("../middleware/validate");
+const { writeLimiter } = require("../middleware/rateLimit");
+const { updateNameSchema, updateUsernameSchema, updateThemeSchema } = require("../validation/miscSchemas");
 const {
     getProfile,
     updateName,
@@ -21,11 +24,12 @@ const upload = multer({
 });
 
 router.use(requireAuth);
+router.use(writeLimiter);
 
 router.get("/", getProfile);
-router.put("/name", updateName);
-router.put("/username", updateUsername);
-router.put("/theme", updateTheme);
+router.put("/name", validate(updateNameSchema), updateName);
+router.put("/username", validate(updateUsernameSchema), updateUsername);
+router.put("/theme", validate(updateThemeSchema), updateTheme);
 router.post("/avatar", upload.single("avatar"), uploadAvatarHandler);
 
 module.exports = router;

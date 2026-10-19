@@ -19,8 +19,8 @@ const PasswordEditor = ({ userId, onClose }) => {
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    if (password.length < 8 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+      toast.error("Password needs 8+ characters with a letter and a number");
       return;
     }
     setSaving(true);
@@ -46,7 +46,7 @@ const PasswordEditor = ({ userId, onClose }) => {
         <input
           type="text"
           autoFocus
-          placeholder="New password (min. 6 characters)"
+          placeholder="New password (8+ chars, letter + number)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSave()}

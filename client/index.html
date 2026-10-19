@@ -18,18 +18,7 @@
       content="Forge tasks into collectible cards, share them with friends in real time and actually finish your list."
     />
     <meta name="twitter:card" content="summary" />
-    <script>
-      // Applied before anything renders so there's no flash of the wrong theme
-      // on load. ThemeContext takes over (and keeps this in sync) once React mounts.
-      (function () {
-        try {
-          var stored = localStorage.getItem("flowsync_theme");
-          document.documentElement.setAttribute("data-theme", stored === "light" ? "light" : "dark");
-        } catch (e) {
-          document.documentElement.setAttribute("data-theme", "dark");
-        }
-      })();
-    </script>
+    <script src="/theme-init.js"></script>
   </head>
   <body>
     <div id="root"></div>

@@ -3,25 +3,32 @@ jest.mock("../config/db", () => ({ query: jest.fn() }));
 const request = require("supertest");
 const jwt = require("jsonwebtoken");
 const app = require("../app");
-const { queueDbResults } = require("./helpers/mockDb");
+const { queueDbResults, setSession, resetDb } = require("./helpers/mockDb");
 
 const tokenFor = (id) => `Bearer ${jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1d" })}`;
 
 beforeEach(() => {
     jest.clearAllMocks();
+    resetDb();
 });
 
-describe("admin routes require an admin email", () => {
+describe("admin routes require is_admin", () => {
     it("rejects a non-admin user", async () => {
-        queueDbResults({ result: [{ email: "regular@example.com" }] });
-
         const res = await request(app).get("/api/admin/users").set("Authorization", tokenFor(2));
         expect(res.status).toBe(403);
     });
 
+    it("doesn't grant admin from an admin-looking email", async () => {
+        // Admin rights come only from the is_admin column now.
+        setSession({ is_admin: false, email: "Admin@Example.com" });
+
+        const res = await request(app).get("/api/admin/stats").set("Authorization", tokenFor(3));
+        expect(res.status).toBe(403);
+    });
+
     it("allows an admin user through", async () => {
+        setSession({ is_admin: true });
         queueDbResults(
-            { result: [{ email: "admin@example.com" }] }, // requireAdmin lookup
             { result: [{ total: "1" }] }, // getUsers count
             { result: [{ id: 1, name: "U", email: "u@example.com" }] } // getUsers rows
         );
@@ -33,8 +40,8 @@ describe("admin routes require an admin email", () => {
     });
 
     it("supports a search query param", async () => {
+        setSession({ is_admin: true });
         queueDbResults(
-            { result: [{ email: "admin@example.com" }] },
             { result: [{ total: "0" }] },
             { result: [] }
         );
@@ -50,7 +57,7 @@ describe("admin routes require an admin email", () => {
 
 describe("PUT /api/admin/users/:id/password", () => {
     it("rejects a short password before touching the db", async () => {
-        queueDbResults({ result: [{ email: "admin@example.com" }] }); // requireAdmin only
+        setSession({ is_admin: true });
 
         const res = await request(app)
             .put("/api/admin/users/2/password")
@@ -60,9 +67,9 @@ describe("PUT /api/admin/users/:id/password", () => {
     });
 
     it("updates the password and writes an audit log entry", async () => {
+        setSession({ is_admin: true });
         queueDbResults(
-            { result: [{ email: "admin@example.com" }] }, // requireAdmin
-            { result: { affectedRows: 1 } }, // UPDATE users
+            { result: { affectedRows: 1 } }, // UPDATE users (also bumps token_version)
             { result: { affectedRows: 1 } } // INSERT admin_actions
         );
 
@@ -73,9 +80,29 @@ describe("PUT /api/admin/users/:id/password", () => {
         expect(res.status).toBe(200);
     });
 
+    it("rejects a weak password (no number)", async () => {
+        setSession({ is_admin: true });
+
+        const res = await request(app)
+            .put("/api/admin/users/2/password")
+            .set("Authorization", tokenFor(1))
+            .send({ password: "onlyletters" });
+        expect(res.status).toBe(400);
+    });
+
+    it("returns 404 for a non-numeric user id", async () => {
+        setSession({ is_admin: true });
+
+        const res = await request(app)
+            .put("/api/admin/users/abc/password")
+            .set("Authorization", tokenFor(1))
+            .send({ password: "newpassword123" });
+        expect(res.status).toBe(404);
+    });
+
     it("returns 404 for a user that doesn't exist", async () => {
+        setSession({ is_admin: true });
         queueDbResults(
-            { result: [{ email: "admin@example.com" }] }, // requireAdmin
             { result: { affectedRows: 0 } } // UPDATE users matches nothing
         );
 
@@ -89,8 +116,8 @@ describe("PUT /api/admin/users/:id/password", () => {
 
 describe("GET /api/admin/audit-log", () => {
     it("returns logged admin actions", async () => {
+        setSession({ is_admin: true });
         queueDbResults(
-            { result: [{ email: "admin@example.com" }] }, // requireAdmin
             { result: [{ total: "1" }] }, // count
             {
                 result: [

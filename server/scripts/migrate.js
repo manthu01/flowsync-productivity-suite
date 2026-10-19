@@ -135,6 +135,36 @@ const run = (sql, label) =>
         "create admin_actions table"
     );
 
+    // Security hardening (Oct 2026). Admin rights move from an email allowlist to a
+    // column (grant with: UPDATE users SET is_admin = TRUE WHERE id = <id>), and
+    // token_version lets a password reset invalidate every existing session.
+    await run(
+        `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE`,
+        "add users.is_admin column"
+    );
+
+    await run(
+        `ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INT NOT NULL DEFAULT 0`,
+        "add users.token_version column"
+    );
+
+    // Emails are compared case-insensitively, so store them lowercase and make
+    // uniqueness ignore case; same for usernames, so "Alice" can't pose as "alice".
+    await run(
+        `UPDATE users SET email = LOWER(email) WHERE email <> LOWER(email)`,
+        "lowercase stored emails"
+    );
+
+    await run(
+        `CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_key ON users (LOWER(email))`,
+        "case-insensitive unique email index"
+    );
+
+    await run(
+        `CREATE UNIQUE INDEX IF NOT EXISTS users_username_lower_key ON users (LOWER(username))`,
+        "case-insensitive unique username index"
+    );
+
     console.log("Migration complete.");
     process.exit(0);
 })();

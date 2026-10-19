@@ -1,5 +1,5 @@
 const { Server } = require("socket.io");
-const jwt = require("jsonwebtoken");
+const { verifySessionToken, loadSession } = require("./utils/session");
 const logger = require("./utils/logger");
 
 let io = null;
@@ -20,16 +20,20 @@ const attachRealtime = (httpServer) => {
 
     // Same JWT already used for the REST API — passed via the socket handshake
     // instead of a header, since the initial connection isn't a normal HTTP request.
-    io.use((socket, next) => {
-        const token = socket.handshake.auth?.token;
-        if (!token) return next(new Error("No token provided"));
+    // Same session check as requireAuth, including token_version, so a reset
+    // password also cuts off live updates for old sessions.
+    io.use(async (socket, next) => {
+        const payload = verifySessionToken(socket.handshake.auth?.token);
+        if (!payload) return next(new Error("Invalid or expired token"));
 
         try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            socket.userId = decoded.id;
+            const session = await loadSession(payload);
+            if (!session) return next(new Error("Invalid or expired token"));
+            socket.userId = session.id;
             next();
-        } catch {
-            next(new Error("Invalid or expired token"));
+        } catch (err) {
+            logger.error({ err }, "Socket session lookup failed");
+            next(new Error("Something went wrong"));
         }
     });
 
