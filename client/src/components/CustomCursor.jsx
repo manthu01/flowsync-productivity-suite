@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   motion,
   useAnimationFrame,
@@ -117,7 +118,10 @@ const CustomCursor = () => {
 
   if (!enabled) return null;
 
-  return (
+  // Portaled to <body> so it stacks above everything: #root is its own stacking
+  // context (z-index: 1), so overlays portaled to <body> (TaskModal) would
+  // otherwise cover the cursor no matter how high its z-index is.
+  return createPortal(
     <>
       {/* Tight dot, follows exactly */}
       <motion.div
@@ -159,7 +163,8 @@ const CustomCursor = () => {
           onAnimationComplete={() => setRipples((list) => list.filter((item) => item.id !== r.id))}
         />
       ))}
-    </>
+    </>,
+    document.body
   );
 };
 
